@@ -189,9 +189,9 @@
   .sub-tab-btn{ flex:1; padding:11px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); border-radius:10px 10px 0 0; font-size:13px; border-bottom:2px solid transparent; }
   .sub-tab-btn.active{ color:var(--text); border-bottom-color:var(--accent-blue); background:var(--surface-2); }
   .checklist-add-row{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-  .checklist-add-row input#checklist-category-input{ flex:0 0 108px; }
-  .checklist-add-row input#checklist-input{ flex:1; min-width:120px; }
-  .checklist-add-row input{ padding:9px 10px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:13px; border-radius:8px; }
+  .checklist-add-row select#checklist-category-input{ flex:0 0 108px; }
+  .checklist-add-row input#checklist-input{ flex:2; min-width:160px; }
+  .checklist-add-row select, .checklist-add-row input{ padding:9px 10px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:16px; border-radius:8px; }
   .progress-row{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); margin-bottom:6px; }
   .progress-bar-track{ height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden; margin-bottom:20px; }
   .progress-bar-fill{ height:100%; background:var(--accent-green); }
@@ -221,13 +221,13 @@
   .modal-overlay.open .modal-panel{ transform:translateY(0); }
   .modal-panel h3{ margin:0 0 4px; font-size:18px; }
   .modal-panel label{ display:block; font-size:11.5px; color:var(--text-dim); margin:16px 0 6px; }
-  .modal-panel input[type=text], .modal-panel input[type=time], .modal-panel input[type=number], .modal-panel input[type=file], .modal-panel textarea{
-    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--surface-2); color:var(--text);
+  .modal-panel input[type=text], .modal-panel input[type=time], .modal-panel input[type=number], .modal-panel input[type=file], .modal-panel textarea, .modal-panel select{
+    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:16px; background:var(--surface-2); color:var(--text);
   }
-  .modal-panel input[type=file]{ font-size:12px; color:var(--text-dim); padding:8px 6px; }
+  .modal-panel input[type=file]{ font-size:13px; color:var(--text-dim); padding:8px 6px; }
   .modal-panel textarea{ resize:vertical; min-height:80px; }
   ::placeholder{ color:var(--text-dim); opacity:.75; }
-  .date-field{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); font-size:14px; text-align:left; color:var(--text); }
+  .date-field{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); font-size:16px; text-align:left; color:var(--text); }
   .date-field.placeholder{ color:var(--text-dim); }
   .checkbox-label{ display:flex !important; align-items:center; gap:8px; margin-top:16px !important; font-size:13px; color:var(--text); }
   .checkbox-label input{ width:auto; }
@@ -269,7 +269,7 @@
   .login-gate.hidden{ display:none !important; }
   .login-box{ width:100%; max-width:340px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; }
   .login-box label{ display:block; font-size:11.5px; color:var(--text-dim); margin:14px 0 6px; }
-  .login-box input{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; }
+  .login-box input{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:16px; }
   .login-error{ color:var(--danger); font-size:12px; margin-top:12px; min-height:16px; }
   .login-hint{ font-size:11px; color:var(--text-dim); margin-top:18px; line-height:1.7; }
 </style>
@@ -508,6 +508,7 @@
       noCosts:'費用が登録された予定はまだありません。<br>予定に費用を入力すると、ここに集計されます。',
       checklistTab:'✅ チェックリスト', notesTab:'📝 メモ',
       categoryPlaceholder:'カテゴリ（任意）', checklistItemPlaceholder:'項目を入力',
+      newCategoryOption:'＋ 新しいカテゴリ', newCategoryPrompt:'新しいカテゴリ名を入力してください',
       checklistEmpty:'チェックリストはまだ空です。<br>持ち物や準備することを追加しましょう。',
       addNote:'＋ メモを追加', notesEmpty:'メモはまだありません。<br>気づいたことを書き留めましょう。',
       editNote:'メモを編集', newNote:'メモを追加', notePlaceholder:'メモを入力', deleteNoteAction:'このメモを削除する',
@@ -569,6 +570,7 @@
       noCosts:'No plans with a cost yet.<br>Add a cost to a plan and it will show up here.',
       checklistTab:'✅ Checklist', notesTab:'📝 Notes',
       categoryPlaceholder:'Category (optional)', checklistItemPlaceholder:'Add an item',
+      newCategoryOption:'+ New category', newCategoryPrompt:'Enter a new category name',
       checklistEmpty:'Your checklist is empty.<br>Add things to pack or prepare.',
       addNote:'＋ Add note', notesEmpty:'No notes yet.<br>Jot down anything worth remembering.',
       editNote:'Edit note', newNote:'Add note', notePlaceholder:'Write a note', deleteNoteAction:'Delete this note',
@@ -1508,8 +1510,10 @@
     const categories = [...new Set(data.checklist.map(c => c.category || otherLabel))];
     let html = `
       <div class="checklist-add-row">
-        <input type="text" id="checklist-category-input" placeholder="${t('categoryPlaceholder')}" list="category-list">
-        <datalist id="category-list">${categories.map(c => `<option value="${escapeHtml(c)}">`).join('')}</datalist>
+        <select id="checklist-category-input" onchange="onCategorySelectChange()">
+          ${categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+          <option value="__new__">${t('newCategoryOption')}</option>
+        </select>
         <input type="text" id="checklist-input" placeholder="${t('checklistItemPlaceholder')}" onkeydown="if(event.key==='Enter') addChecklistItem()">
         <button type="button" class="btn-outline" onclick="addChecklistItem()">＋</button>
       </div>
@@ -1542,13 +1546,27 @@
     });
     return order.map(cat => ({ cat, items: map[cat] }));
   }
+  function onCategorySelectChange(){
+    const sel = document.getElementById('checklist-category-input');
+    if(sel.value === '__new__'){
+      const name = (prompt(t('newCategoryPrompt')) || '').trim();
+      if(name){
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.insertBefore(opt, sel.lastElementChild);
+        sel.value = name;
+      } else {
+        sel.selectedIndex = 0;
+      }
+    }
+  }
   async function addChecklistItem(){
     const input = document.getElementById('checklist-input');
-    const catInput = document.getElementById('checklist-category-input');
+    const sel = document.getElementById('checklist-category-input');
     const text = input.value.trim();
     if(!text) return;
     const otherLabel = LANG === 'en' ? 'Other' : 'その他';
-    const category = catInput.value.trim() || otherLabel;
+    const category = (sel.value && sel.value !== '__new__') ? sel.value : otherLabel;
     tripDataCache[currentTripId].checklist.push({ id: uid(), text, checked: false, category });
     input.value = '';
     await saveTripData(currentTripId);
