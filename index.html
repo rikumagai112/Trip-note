@@ -5,8 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <title>TRIP NOTE</title>
-  <link rel="icon" href="apple-touch-icon.png"> 
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="TRIP NOTE">
+<!-- Deliberately NOT setting apple-mobile-web-app-capable here: enabling iOS's
+     fullscreen "standalone" launch mode gives home-screen apps their own
+     separate storage, which breaks the "stay signed in" behavior below. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -363,7 +367,8 @@
     <label data-i18n="typeLabel"></label>
     <div class="type-picker" id="item-type-picker"></div>
     <label data-i18n="dateLabel"></label>
-    <button type="button" class="date-field placeholder" id="item-form-date" onclick="openDatePicker('item-form-date')"></button>
+    <button type="button" class="date-field placeholder" id="item-form-date" onclick="openRangeDatePicker('item-form-date')"></button>
+    <div class="attachment-hint" data-i18n="dateRangeHint"></div>
     <div class="form-row-2">
       <div><label data-i18n="startTimeLabel"></label><input type="time" id="item-form-start-time"></div>
       <div><label data-i18n="endTimeLabel"></label><input type="time" id="item-form-end-time"></div>
@@ -454,9 +459,9 @@
 
 <div id="date-picker-popup">
   <div class="dp-header">
-    <button type="button" onclick="changeDatePickerMonth(-1)">‹</button>
+    <button type="button" onclick="event.stopPropagation(); changeDatePickerMonth(-1)">‹</button>
     <div class="dp-title" id="date-picker-title"></div>
-    <button type="button" onclick="changeDatePickerMonth(1)">›</button>
+    <button type="button" onclick="event.stopPropagation(); changeDatePickerMonth(1)">›</button>
   </div>
   <div class="dp-weekdays" id="date-picker-weekdays"></div>
   <div class="dp-grid" id="date-picker-grid"></div>
@@ -484,6 +489,7 @@
       addItem:'＋ 予定を追加', itemEmptyDay:'この日の予定はまだありません。',
       editItem:'予定を編集', newItem:'予定を追加', itemTitlePlaceholder:'例：ディズニーランド',
       typeLabel:'タイプ', dateLabel:'日付', selectDate:'日付を選択',
+      dateRangeHint:'開始日をタップした後、続けて終了日をタップしてください（同じ日をもう一度タップすると1日だけの予定になります）',
       startTimeLabel:'開始時刻', endTimeLabel:'終了時刻',
       placeLabel:'場所', placeLabelOptional:'場所（任意）', placePlaceholder:'例：Disneyland Park, Anaheim',
       contactLabel:'連絡先（任意）', contactPlaceholder:'例：+1 714-781-4636',
@@ -526,7 +532,8 @@
       itemDetailCost:'費用', itemDetailMemo:'メモ', itemDetailAttachment:'添付',
       paidSuffix:'（支払済み）', unpaidSuffix:'（未払い）',
       addToSchedule:'＋ 予定に追加',
-      dayOf: n => `${n}日目`
+      dayOf: n => `${n}日目`,
+      dayRangeOf: (a,b) => a===b ? `${a}日目` : `${a}〜${b}日目`
     },
     en: {
       addTrip:'＋ Add trip', upcoming:'Upcoming', past:'Past',
@@ -543,6 +550,7 @@
       addItem:'＋ Add plan', itemEmptyDay:'Nothing planned for this day yet.',
       editItem:'Edit plan', newItem:'Add plan', itemTitlePlaceholder:'e.g. Disneyland',
       typeLabel:'Type', dateLabel:'Date', selectDate:'Select date',
+      dateRangeHint:'Tap the start date, then tap the end date (tap the same day again for a single-day plan)',
       startTimeLabel:'Start time', endTimeLabel:'End time',
       placeLabel:'Place', placeLabelOptional:'Place (optional)', placePlaceholder:'e.g. Disneyland Park, Anaheim',
       contactLabel:'Contact (optional)', contactPlaceholder:'e.g. +1 714-781-4636',
@@ -585,7 +593,8 @@
       itemDetailCost:'Cost', itemDetailMemo:'Notes', itemDetailAttachment:'Attachment',
       paidSuffix:' (Paid)', unpaidSuffix:' (Unpaid)',
       addToSchedule:'＋ Add to schedule',
-      dayOf: n => `Day ${n}`
+      dayOf: n => `Day ${n}`,
+      dayRangeOf: (a,b) => a===b ? `Day ${a}` : `Day ${a}–${b}`
     }
   };
   function t(key){
@@ -651,6 +660,18 @@
     try{ await window.storage.set('trips', JSON.stringify(trips), true); }
     catch(e){ console.error('save failed', e); }
   }
+  const LEGACY_ICON_TO_TYPE = {
+    '✈️':'move', '🚄':'move', '🚗':'move', '🚕':'move', '⛴️':'move', '🚃':'move',
+    '🏨':'stay', '🛏️':'stay', '🏕️':'stay',
+    '🍽️':'food', '☕':'food',
+    '🎡':'activity', '📷':'activity', '🏖️':'activity', '⛰️':'activity', '🏙️':'activity',
+    '🛍️':'shop',
+    '🎫':'other', '📍':'other', '💤':'other'
+  };
+  function migrateItem(it){
+    if(!it.type){ it.type = (it.icon && LEGACY_ICON_TO_TYPE[it.icon]) || 'other'; }
+    return it;
+  }
   async function loadTripData(id){
     if(tripDataCache[id]) return tripDataCache[id];
     let data = { items: [], candidates: [], checklist: [], notes: [], memories: [] };
@@ -658,6 +679,8 @@
       const res = await window.storage.get('trip:'+id, true);
       if(res && res.value) data = Object.assign(data, JSON.parse(res.value));
     }catch(e){ /* not found yet */ }
+    data.items = (data.items || []).map(migrateItem);
+    data.candidates = data.candidates || [];
     tripDataCache[id] = data;
     return data;
   }
@@ -814,7 +837,7 @@
   function renderRangeFieldDisplay(fieldId){
     const btn = document.getElementById(fieldId);
     if(btn.dataset.start && btn.dataset.end){
-      btn.textContent = formatDateRange(btn.dataset.start, btn.dataset.end);
+      btn.textContent = (btn.dataset.start === btn.dataset.end) ? formatDateJP(btn.dataset.start) : formatDateRange(btn.dataset.start, btn.dataset.end);
       btn.classList.remove('placeholder');
     } else if(btn.dataset.start){
       btn.textContent = `${formatDateJP(btn.dataset.start)} 〜 ${t('selectEndDate')}`;
@@ -885,7 +908,7 @@
         if(dateStr === rangeStart || dateStr === rangeEnd) cls += ' selected';
         else if(rangeStart && rangeEnd && dateStr > rangeStart && dateStr < rangeEnd) cls += ' in-range';
       }
-      cells += `<button type="button" class="${cls}" onclick="onDatePickerDayClick('${dateStr}')">${day}</button>`;
+      cells += `<button type="button" class="${cls}" onclick="event.stopPropagation(); onDatePickerDayClick('${dateStr}')">${day}</button>`;
     }
     document.getElementById('date-picker-grid').innerHTML = cells;
   }
@@ -1096,7 +1119,7 @@
     const data = tripDataCache[currentTripId];
     const days = buildDayList(trip);
     if(!selectedDay || !days.includes(selectedDay)) selectedDay = days[0];
-    const dayItems = data.items.filter(it => it.date === selectedDay).slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
+    const dayItems = data.items.filter(it => selectedDay >= it.date && selectedDay <= (it.endDate || it.date)).slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
     let html = `
       <div class="day-pills-scroll"><div class="day-pills">
         ${days.map(d => {
@@ -1114,6 +1137,7 @@
   }
   function renderTimelineRow(it){
     const info = typeInfo(it.type);
+    const isMultiDay = it.endDate && it.endDate !== it.date;
     return `
       <div class="tl-row">
         <div class="tl-time">${it.startTime || ''}</div>
@@ -1124,6 +1148,7 @@
             <div class="tl-title">${escapeHtml(it.title)}</div>
             ${it.endTime ? `<div class="tl-endtime">~${it.endTime}</div>` : ''}
           </div>
+          ${isMultiDay ? `<div class="tl-place">📅 ${formatDateJP(it.date)} 〜 ${formatDateJP(it.endDate)}</div>` : ''}
           ${it.place ? `<div class="tl-place">📍 ${escapeHtml(it.place)}</div>` : ''}
           ${Number(it.cost) > 0 ? `<div class="tl-cost">${formatYen(it.cost)}${it.paid ? '' : t('unpaidSuffix')}</div>` : ''}
         </div>
@@ -1159,7 +1184,8 @@
     document.getElementById('item-detail-topbar-title').textContent = it.title;
     const mapUrl = it.place ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(it.place)}` : null;
     let rows = '';
-    rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailDate')}</span><span class="detail-row-value">${formatDateJP(it.date)}</span></div>`;
+    const isMultiDay = it.endDate && it.endDate !== it.date;
+    rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailDate')}</span><span class="detail-row-value">${isMultiDay ? (formatDateJP(it.date)+' 〜 '+formatDateJP(it.endDate)) : formatDateJP(it.date)}</span></div>`;
     if(it.startTime || it.endTime){
       rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailTime')}</span><span class="detail-row-value">${it.startTime||''}${it.endTime?(' 〜 '+it.endTime):''}</span></div>`;
     }
@@ -1206,7 +1232,11 @@
     document.getElementById('item-form-file').value = '';
     document.getElementById('item-modal-title').textContent = editingItemId ? t('editItem') : t('newItem');
     document.getElementById('item-form-title').value = item ? (item.title || '') : '';
-    setDateField('item-form-date', (item && item.date) ? item.date : (defaultDate || ''));
+    const itemDateBtn = document.getElementById('item-form-date');
+    const dateStartVal = (item && item.date) ? item.date : (defaultDate || '');
+    itemDateBtn.dataset.start = dateStartVal;
+    itemDateBtn.dataset.end = (item && item.endDate) ? item.endDate : dateStartVal;
+    renderRangeFieldDisplay('item-form-date');
     document.getElementById('item-form-start-time').value = item ? (item.startTime || '') : '';
     document.getElementById('item-form-end-time').value = item ? (item.endTime || '') : '';
     document.getElementById('item-form-place').value = item ? (item.place || '') : '';
@@ -1250,7 +1280,9 @@
   function markRemoveAttachment(){ removeAttachmentFlag = true; renderAttachmentPreview(); }
   async function saveItemForm(){
     const title = val('item-form-title').trim();
-    const date = getDateField('item-form-date');
+    const itemDateBtn = document.getElementById('item-form-date');
+    const date = itemDateBtn.dataset.start || '';
+    const endDate = itemDateBtn.dataset.end || date;
     if(!title || !date){ alert(t('alertItemRequired')); return; }
     const startTime = val('item-form-start-time');
     const endTime = val('item-form-end-time');
@@ -1267,10 +1299,10 @@
     if(editingItemId){
       item = data.items.find(i => i.id === editingItemId);
       itemId = editingItemId;
-      Object.assign(item, { title, type: selectedItemType, date, startTime, endTime, place, contact, checkIn, checkOut, url, cost, paid, memo });
+      Object.assign(item, { title, type: selectedItemType, date, endDate, startTime, endTime, place, contact, checkIn, checkOut, url, cost, paid, memo });
     } else {
       itemId = uid();
-      item = { id: itemId, title, type: selectedItemType, date, startTime, endTime, place, contact, checkIn, checkOut, url, cost, paid, memo, hasAttachment: false };
+      item = { id: itemId, title, type: selectedItemType, date, endDate, startTime, endTime, place, contact, checkIn, checkOut, url, cost, paid, memo, hasAttachment: false };
       data.items.push(item);
     }
     if(pendingAttachment){
@@ -1330,14 +1362,15 @@
     else {
       html += scheduled.map(it => {
         const info = typeInfo(it.type);
-        const dayIndex = Math.floor((new Date(it.date+'T00:00:00') - new Date(trip.start+'T00:00:00')) / 86400000) + 1;
+        const dayIndexStart = Math.floor((new Date(it.date+'T00:00:00') - new Date(trip.start+'T00:00:00')) / 86400000) + 1;
+        const dayIndexEnd = it.endDate ? Math.floor((new Date(it.endDate+'T00:00:00') - new Date(trip.start+'T00:00:00')) / 86400000) + 1 : dayIndexStart;
         return `
           <div class="spot-card" onclick="openItemDetail('${it.id}')">
             <div class="spot-icon" style="background:${info.color}">${info.icon}</div>
             <div class="spot-body">
               <div class="spot-title">${escapeHtml(it.title)}</div>
               <div class="spot-address">${escapeHtml(it.place)}</div>
-              <div class="spot-tag">${t('dayOf', dayIndex)} ${it.startTime||''}</div>
+              <div class="spot-tag">${t('dayRangeOf', dayIndexStart, dayIndexEnd)} ${it.startTime||''}</div>
             </div>
             <div class="spot-chevron">›</div>
           </div>
@@ -1704,18 +1737,23 @@
     getFirestore, doc, getDoc, setDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCkdaawL5pLnVhOS66zRHNrg93nF622RFw",
-  authDomain: "trip-note-ccf03.firebaseapp.com",
-  projectId: "trip-note-ccf03",
-  storageBucket: "trip-note-ccf03.firebasestorage.app",
-  messagingSenderId: "258936823559",
-  appId: "1:258936823559:web:ded162e49f36754940efa2"
-};
+  // ▼▼▼ Firebaseコンソール → プロジェクトの設定 → 「マイアプリ」で取得した値に置き換えてください ▼▼▼
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  // ▲▲▲ ここまで ▲▲▲
 
   const firebaseApp = initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
   const db = getFirestore(firebaseApp);
+  // Keep the sign-in persisted in this browser (IndexedDB) so people don't
+  // have to log in again every time they open the page.
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
 
   // All app data lives in one Firestore collection called "storage", one
   // document per key (e.g. "trips", "trip:abc123", "cover:abc123").
@@ -1754,7 +1792,6 @@ const firebaseConfig = {
     setLoginError('');
     if(!email || !password){ setLoginError('メールアドレスとパスワードを入力してください。'); return; }
     try{
-      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, password);
     }catch(e){
       setLoginError('ログインできませんでした。メールアドレスとパスワードをご確認ください。');
