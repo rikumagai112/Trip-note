@@ -1737,14 +1737,16 @@
     getFirestore, doc, getDoc, setDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCkdaawL5pLnVhOS66zRHNrg93nF622RFw",
-  authDomain: "trip-note-ccf03.firebaseapp.com",
-  projectId: "trip-note-ccf03",
-  storageBucket: "trip-note-ccf03.firebasestorage.app",
-  messagingSenderId: "258936823559",
-  appId: "1:258936823559:web:ded162e49f36754940efa2"
-};
+  // ▼▼▼ Firebaseコンソール → プロジェクトの設定 → 「マイアプリ」で取得した値に置き換えてください ▼▼▼
+  const firebaseConfig = {
+    apiKey: "AIzaSyCkdaawL5pLnVhOS66zRHNrg93nF622RFw",
+    authDomain: "trip-note-ccf03.firebaseapp.com",
+    projectId: "trip-note-ccf03",
+    storageBucket: "trip-note-ccf03.firebasestorage.app",
+    messagingSenderId: "258936823559",
+    appId: "1:258936823559:web:ded162e49f36754940efa2"
+  };
+  // ▲▲▲ ここまで ▲▲▲
 
   const firebaseApp = initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
@@ -1792,7 +1794,8 @@ const firebaseConfig = {
     try{
       await signInWithEmailAndPassword(auth, email, password);
     }catch(e){
-      setLoginError('ログインできませんでした。メールアドレスとパスワードをご確認ください。');
+      console.error('Firebase sign-in error:', e);
+      setLoginError('ログインできませんでした（' + (e.code || e.message || 'unknown error') + '）。メールアドレスとパスワードをご確認ください。');
     }
   });
   document.getElementById('login-password').addEventListener('keydown', (e) => {
