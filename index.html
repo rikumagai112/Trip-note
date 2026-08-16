@@ -1737,16 +1737,14 @@
     getFirestore, doc, getDoc, setDoc, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
-  // ▼▼▼ Firebaseコンソール → プロジェクトの設定 → 「マイアプリ」で取得した値に置き換えてください ▼▼▼
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  // ▲▲▲ ここまで ▲▲▲
+const firebaseConfig = {
+  apiKey: "AIzaSyCkdaawL5pLnVhOS66zRHNrg93nF622RFw",
+  authDomain: "trip-note-ccf03.firebaseapp.com",
+  projectId: "trip-note-ccf03",
+  storageBucket: "trip-note-ccf03.firebasestorage.app",
+  messagingSenderId: "258936823559",
+  appId: "1:258936823559:web:ded162e49f36754940efa2"
+};
 
   const firebaseApp = initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
