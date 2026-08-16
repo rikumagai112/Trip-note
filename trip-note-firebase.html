@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>TRIP NOTE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg:#f2f1ec;
+    --app-bg:#ffffff;
+    --surface:#ffffff;
+    --surface-2:#f1efe9;
+    --border:#e3e0d6;
+    --text:#1c1b19;
+    --text-dim:#716d63;
+    --link:#2F5FD6;
+    --accent-blue:#4C7EF3;
+    --accent-green:#2f9d6c;
+    --accent-orange:#d97e33;
+    --accent-purple:#9b4fd1;
+    --accent-pink:#d24a76;
+    --danger:#d1483f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0a0a0d;
+      --app-bg:#101014;
+      --surface:#17171d;
+      --surface-2:#1f1f27;
+      --border:#2b2b34;
+      --text:#f2f1ee;
+      --text-dim:#9c9aa3;
+      --link:#7DA3F5;
+      --accent-blue:#4C7EF3;
+      --accent-green:#3FB27F;
+      --accent-orange:#F0954A;
+      --accent-purple:#B15FE8;
+      --accent-pink:#E85C8A;
+      --danger:#e0685f;
+    }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:'Noto Sans JP', sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+  .heavy{ font-weight:900; }
+  .hidden{ display:none !important; }
+  button, input, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--accent-blue); outline-offset:2px;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+
+  .app{ max-width:520px; margin:0 auto; min-height:100vh; background:var(--app-bg); position:relative; }
+
+  /* ---------- Home ---------- */
+  .home-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:24px 20px 16px; }
+  .brand{ font-size:22px; font-weight:900; letter-spacing:.5px; }
+  .home-tabs{ display:flex; gap:10px; padding:0 20px 16px; }
+  .home-tab-btn{ flex:1; padding:12px; border-radius:12px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); font-size:13px; }
+  .home-tab-btn.active{ background:var(--surface-2); color:var(--text); border-color:var(--accent-blue); }
+  #trip-list{ padding:0 20px 60px; }
+  .trip-card{ border:1px solid var(--border); background:var(--surface); margin-bottom:16px; overflow:hidden; border-radius:16px; position:relative; }
+  .trip-photo{ height:150px; background-color:var(--surface-2); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; }
+  .trip-photo-fallback{ font-size:40px; opacity:.9; }
+  .trip-card-body{ padding:14px 16px; position:relative; }
+  .trip-card-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
+  .badge{ font-size:11px; padding:4px 10px; border-radius:20px; background:rgba(76,126,243,.16); color:var(--link); white-space:nowrap; }
+  .badge.past{ background:rgba(156,154,163,.18); color:var(--text-dim); }
+  .trip-location{ font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .trip-card-body h3{ font-size:16.5px; margin:0 0 6px; }
+  .trip-dates{ font-size:12px; color:var(--text-dim); }
+  .trip-edit-icon{ position:absolute; top:12px; right:12px; background:none; border:none; color:var(--text-dim); font-size:15px; padding:6px; }
+  .trip-edit-icon:hover{ color:var(--text); }
+  .empty-state{ text-align:center; padding:48px 24px; color:var(--text-dim); border:1px dashed var(--border); font-size:13px; line-height:1.9; border-radius:14px; }
+
+  /* ---------- Buttons ---------- */
+  .btn-outline{ border:1px solid var(--accent-blue); background:none; padding:9px 14px; border-radius:10px; font-size:12.5px; color:var(--link); white-space:nowrap; transition:background .15s, color .15s; }
+  .btn-outline:hover{ background:var(--accent-blue); color:#fff; }
+  .btn-outline.small{ padding:5px 10px; font-size:11px; }
+  .btn-outline.full{ width:100%; text-align:center; display:block; }
+  .btn-primary{ flex:1; background:var(--accent-blue); color:#fff; border:none; padding:12px; border-radius:10px; font-size:14px; }
+  .btn-secondary{ flex:1; background:none; border:1px solid var(--border); padding:12px; border-radius:10px; font-size:14px; color:var(--text); }
+  .btn-delete{ background:none; border:none; color:var(--text-dim); font-size:12px; text-decoration:underline; display:block; margin:18px auto 0; }
+  .btn-delete:hover{ color:var(--text); }
+  .icon-only-btn{ background:none; border:none; font-size:18px; color:var(--text); padding:8px; border-radius:8px; }
+  .icon-only-btn:hover{ background:var(--surface-2); }
+  .icon-only-btn.danger{ color:var(--danger); }
+  .hero-icon-btn{ position:absolute; top:14px; width:36px; height:36px; border-radius:50%; background:rgba(20,20,24,.55); border:none; color:#fff; font-size:16px; z-index:3; }
+  .hero-back{ left:14px; } .hero-edit{ right:14px; }
+
+  /* ---------- Trip detail ---------- */
+  .detail-hero{ position:relative; height:230px; overflow:hidden; background-size:cover; background-position:center; }
+  .hero-fallback-icon{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:64px; z-index:1; }
+  .hero-scrim{ position:absolute; inset:0; background:linear-gradient(to top, rgba(8,8,10,.9), rgba(8,8,10,0) 60%); z-index:2; }
+  .hero-title-wrap{ position:absolute; left:20px; right:20px; bottom:16px; z-index:3; }
+  .hero-title-wrap h2{ color:#fff; font-size:20px; margin:0; }
+  .detail-info-row{ display:flex; justify-content:space-between; align-items:center; padding:14px 20px; font-size:12.5px; color:var(--text-dim); border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px; }
+  .tab-bar{ display:flex; border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab-btn{ flex:1; background:none; border:none; border-bottom:2px solid transparent; padding:13px 2px; font-size:11.5px; color:var(--text-dim); white-space:nowrap; }
+  .tab-btn.active{ color:var(--text); border-bottom-color:var(--accent-blue); font-weight:700; }
+  .tab-content{ padding:20px; padding-bottom:60px; }
+  .tab-toolbar-single{ margin-bottom:16px; }
+
+  /* ---------- Item / candidate detail screens ---------- */
+  .detail-topbar{ display:flex; align-items:center; gap:2px; padding:12px 8px; border-bottom:1px solid var(--border); }
+  .detail-topbar-title{ flex:1; font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 6px; }
+  .detail-page-content{ padding-bottom:50px; }
+  .detail-icon-card{ display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin:16px 16px 0; }
+  .detail-icon-square{ width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .detail-icon-title{ font-size:16px; }
+  .detail-icon-type{ font-size:12px; margin-top:4px; font-weight:700; }
+  .detail-info-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:0 16px; margin:16px 16px 0; }
+  .detail-row{ display:flex; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+  .detail-row:last-child{ border-bottom:none; }
+  .detail-row-label{ color:var(--text-dim); flex-shrink:0; }
+  .detail-row-value{ text-align:right; word-break:break-word; }
+  .detail-map-wrap{ margin:16px; }
+  .map-embed{ width:100%; height:180px; border:none; border-radius:14px; display:block; }
+  .map-open-link{ display:block; text-align:center; margin-top:10px; color:var(--link); font-size:13px; text-decoration:none; padding:10px; }
+  .detail-action-row{ margin:20px 16px 0; }
+
+  /* ---------- Day pills / timeline ---------- */
+  .day-pills-scroll{ overflow-x:auto; margin:0 -20px; padding:0 20px; }
+  .day-pills{ display:flex; gap:8px; padding-bottom:4px; }
+  .day-pill{ flex-shrink:0; width:50px; padding:8px 4px; border-radius:12px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); text-align:center; display:flex; flex-direction:column; gap:2px; }
+  .day-pill-wd{ font-size:10px; } .day-pill-num{ font-size:15px; font-weight:700; }
+  .day-pill.active{ background:var(--text); color:var(--app-bg); border-color:var(--text); }
+  .tl-row{ display:flex; gap:10px; }
+  .tl-time{ width:42px; flex-shrink:0; font-size:11.5px; color:var(--text-dim); padding-top:12px; text-align:right; }
+  .tl-line-wrap{ display:flex; flex-direction:column; align-items:center; width:14px; flex-shrink:0; }
+  .tl-dot{ width:11px; height:11px; border-radius:50%; margin-top:14px; flex-shrink:0; }
+  .tl-line{ flex:1; width:2px; background:var(--border); margin-top:2px; }
+  .tl-row:last-child .tl-line{ display:none; }
+  .tl-card{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:13px 14px; margin-bottom:14px; min-width:0; }
+  .tl-card-head{ display:flex; align-items:center; gap:10px; }
+  .tl-icon{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .tl-title{ flex:1; font-size:14px; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tl-endtime{ font-size:11px; color:var(--text-dim); flex-shrink:0; }
+  .tl-place{ font-size:12px; color:var(--text-dim); margin-top:8px; }
+  .tl-memo{ font-size:12px; color:var(--text-dim); margin-top:6px; }
+  .tl-cost{ font-size:12px; font-weight:700; margin-top:8px; text-align:right; }
+
+  /* ---------- Spots ---------- */
+  .spot-section-title{ font-size:12.5px; color:var(--text-dim); margin:0 0 10px; display:flex; align-items:center; gap:6px; }
+  .spot-count{ background:var(--surface-2); padding:1px 8px; border-radius:10px; font-size:11px; }
+  .spot-card{ display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .spot-icon{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .spot-body{ flex:1; min-width:0; }
+  .spot-title{ font-size:13.5px; font-weight:700; }
+  .spot-address{ font-size:11.5px; color:var(--text-dim); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .spot-tag{ font-size:10.5px; color:var(--text-dim); margin-top:4px; }
+  .spot-chevron{ color:var(--text-dim); font-size:18px; }
+  .spot-remove{ background:none; border:none; color:var(--text-dim); font-size:16px; padding:4px 8px; }
+
+  /* ---------- Cost ---------- */
+  .stat-row{ display:flex; gap:10px; margin-bottom:22px; }
+  .stat-box{ flex:1; border:1px solid var(--border); background:var(--surface); border-radius:12px; padding:14px 8px; text-align:center; }
+  .stat-value{ font-size:17px; font-weight:700; }
+  .stat-label{ font-size:10.5px; color:var(--text-dim); margin-top:5px; }
+  .item-row{ display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); }
+  .item-body{ flex:1; min-width:0; }
+  .item-title{ font-weight:700; font-size:14px; }
+  .item-meta{ font-size:12px; color:var(--text-dim); margin-top:3px; }
+  .item-cost{ font-size:13px; font-weight:700; white-space:nowrap; padding-left:6px; text-align:right; }
+  .item-cost.unpaid::after{ content:attr(data-unpaid-label); display:block; font-size:9.5px; font-weight:400; color:var(--text-dim); }
+  .map-link, .attach-link{ color:var(--link); text-decoration:underline; text-decoration-color:rgba(76,126,243,.35); background:none; border:none; padding:0; font-size:12px; cursor:pointer; }
+  .paid-checkbox{ width:22px; height:22px; border-radius:50%; border:2px solid var(--text-dim); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; margin-top:2px; }
+  .paid-checkbox.checked{ background:var(--accent-green); border-color:var(--accent-green); }
+
+  /* ---------- Prep ---------- */
+  .sub-tab-pills{ display:flex; gap:8px; margin-bottom:18px; }
+  .sub-tab-btn{ flex:1; padding:11px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); border-radius:10px 10px 0 0; font-size:13px; border-bottom:2px solid transparent; }
+  .sub-tab-btn.active{ color:var(--text); border-bottom-color:var(--accent-blue); background:var(--surface-2); }
+  .checklist-add-row{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .checklist-add-row input#checklist-category-input{ flex:0 0 108px; }
+  .checklist-add-row input#checklist-input{ flex:1; min-width:120px; }
+  .checklist-add-row input{ padding:9px 10px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:13px; border-radius:8px; }
+  .progress-row{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); margin-bottom:6px; }
+  .progress-bar-track{ height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden; margin-bottom:20px; }
+  .progress-bar-fill{ height:100%; background:var(--accent-green); }
+  .checklist-group-title{ font-size:11.5px; color:var(--text-dim); margin:18px 0 6px; }
+  .checklist-group:first-child .checklist-group-title{ margin-top:0; }
+  .checklist-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+  .sq-checkbox{ width:20px; height:20px; border:2px solid var(--text-dim); border-radius:5px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
+  .sq-checkbox.checked{ background:var(--accent-green); border-color:var(--accent-green); }
+  .checklist-text{ flex:1; font-size:14px; }
+  .checklist-text.done{ text-decoration:line-through; color:var(--text-dim); }
+  .delete-btn{ background:none; border:none; color:var(--text-dim); font-size:17px; padding:4px 8px; }
+  .delete-btn:hover{ color:var(--text); }
+  .note-card{ border-top:2px dashed var(--border); padding:16px 2px; }
+  .note-text{ font-size:14px; white-space:pre-wrap; line-height:1.7; }
+  .note-date{ font-size:11px; color:var(--text-dim); margin-top:10px; text-align:right; }
+
+  /* ---------- Memories ---------- */
+  .memory-card{ border:1px solid var(--border); background:var(--surface); border-radius:16px; overflow:hidden; margin-bottom:16px; }
+  .memory-photo{ width:100%; max-height:220px; object-fit:cover; display:block; }
+  .memory-text{ font-size:13.5px; padding:14px 16px 4px; white-space:pre-wrap; line-height:1.7; }
+  .memory-card .note-date{ padding:0 16px 14px; border:none; margin-top:6px; }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(4,4,6,.6); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; opacity:0; pointer-events:none; transition:opacity .15s; }
+  .modal-overlay.open{ opacity:1; pointer-events:auto; }
+  .modal-panel{ background:var(--surface); width:100%; max-width:420px; max-height:88vh; overflow-y:auto; padding:24px; border-radius:16px; transform:translateY(10px); transition:transform .15s; border:1px solid var(--border); }
+  .modal-overlay.open .modal-panel{ transform:translateY(0); }
+  .modal-panel h3{ margin:0 0 4px; font-size:18px; }
+  .modal-panel label{ display:block; font-size:11.5px; color:var(--text-dim); margin:16px 0 6px; }
+  .modal-panel input[type=text], .modal-panel input[type=time], .modal-panel input[type=number], .modal-panel input[type=file], .modal-panel textarea{
+    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--surface-2); color:var(--text);
+  }
+  .modal-panel input[type=file]{ font-size:12px; color:var(--text-dim); padding:8px 6px; }
+  .modal-panel textarea{ resize:vertical; min-height:80px; }
+  ::placeholder{ color:var(--text-dim); opacity:.75; }
+  .date-field{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); font-size:14px; text-align:left; color:var(--text); }
+  .date-field.placeholder{ color:var(--text-dim); }
+  .checkbox-label{ display:flex !important; align-items:center; gap:8px; margin-top:16px !important; font-size:13px; color:var(--text); }
+  .checkbox-label input{ width:auto; }
+  .form-row-2{ display:flex; gap:12px; } .form-row-2 > div{ flex:1; }
+  .icon-picker{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .icon-btn{ width:38px; height:38px; border:1px solid var(--border); background:var(--surface-2); font-size:17px; border-radius:50%; }
+  .icon-btn.selected{ border-color:var(--accent-blue); background:var(--accent-blue); }
+  .type-picker{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .type-chip{ border:1px solid var(--border); background:var(--surface-2); padding:8px 12px; border-radius:20px; font-size:12px; color:var(--text-dim); display:inline-flex; gap:6px; align-items:center; }
+  .type-chip.selected{ background:var(--chip-color); border-color:var(--chip-color); color:#fff; }
+  .modal-actions{ display:flex; gap:10px; margin-top:24px; }
+  .attachment-chip{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px; border:1px solid var(--border); background:var(--surface-2); border-radius:8px; font-size:13px; margin-top:8px; }
+  .attachment-chip .attachment-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .attachment-empty{ font-size:12px; color:var(--text-dim); margin-top:8px; }
+  .attachment-hint{ font-size:10.5px; color:var(--text-dim); margin-top:6px; }
+  .cover-preview-wrap{ position:relative; margin-top:8px; }
+  .cover-preview-wrap img{ width:100%; max-height:160px; object-fit:cover; border-radius:10px; display:block; }
+  .cover-remove-btn{ position:absolute; top:8px; right:8px; background:rgba(10,10,12,.7); color:#fff; border-radius:50%; width:26px; height:26px; text-decoration:none; }
+
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--accent-blue); color:#fff; padding:10px 22px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:200; }
+  .toast.show{ opacity:1; }
+
+  #date-picker-popup{ position:fixed; z-index:150; background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 28px rgba(0,0,0,.35); padding:14px; width:280px; border-radius:14px; display:none; }
+  #date-picker-popup.open{ display:block; }
+  .dp-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .dp-header button{ background:none; border:none; font-size:16px; color:var(--text); padding:6px 10px; }
+  .dp-title{ font-size:14px; font-weight:700; }
+  .dp-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:10.5px; color:var(--text-dim); margin-bottom:4px; }
+  .dp-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .dp-cell{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:13px; border:none; background:none; color:var(--text); border-radius:8px; }
+  .dp-empty{ visibility:hidden; }
+  .dp-day:hover{ background:var(--surface-2); }
+  .dp-day.today{ font-weight:700; text-decoration:underline; }
+  .dp-day.in-range{ background:rgba(76,126,243,.16); border-radius:0; }
+  .dp-day.selected{ background:var(--accent-blue); color:#fff; }
+
+  /* ---------- Firebase login gate ---------- */
+  .login-gate{ position:fixed; inset:0; background:var(--bg); z-index:500; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .login-gate.hidden{ display:none !important; }
+  .login-box{ width:100%; max-width:340px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; }
+  .login-box label{ display:block; font-size:11.5px; color:var(--text-dim); margin:14px 0 6px; }
+  .login-box input{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; }
+  .login-error{ color:var(--danger); font-size:12px; margin-top:12px; min-height:16px; }
+  .login-hint{ font-size:11px; color:var(--text-dim); margin-top:18px; line-height:1.7; }
+</style>
+</head>
+<body>
+
+<div id="login-gate" class="login-gate">
+  <div class="login-box">
+    <div class="brand" style="margin-bottom:4px;">TRIP NOTE</div>
+    <label for="login-email">Email</label>
+    <input type="email" id="login-email" autocomplete="username">
+    <label for="login-password">Password</label>
+    <input type="password" id="login-password" autocomplete="current-password">
+    <button type="button" class="btn-primary" id="login-submit" style="width:100%;margin-top:20px;">ログイン / Log in</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">Firebase Authenticationに登録した2人だけがログインできます。</div>
+  </div>
+</div>
+
+<div class="app hidden">
+  <div id="screen-home">
+    <div class="home-header">
+      <div class="brand">TRIP NOTE</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn-outline" data-i18n="addTrip" onclick="openTripModal(null)"></button>
+        <button class="icon-only-btn" id="logout-btn" title="ログアウト / Log out" style="font-size:16px;">⎋</button>
+      </div>
+    </div>
+    <div class="home-tabs" id="home-tabs"></div>
+    <div id="trip-list"></div>
+  </div>
+
+  <div id="screen-trip" class="hidden">
+    <div class="detail-hero" id="detail-hero">
+      <button id="back-btn" class="hero-icon-btn hero-back" data-i18n-aria="back">←</button>
+      <button id="edit-trip-btn" class="hero-icon-btn hero-edit" data-i18n-aria="editTrip">✎</button>
+      <div class="hero-fallback-icon" id="hero-fallback-icon"></div>
+      <div class="hero-scrim"></div>
+      <div class="hero-title-wrap"><h2 id="trip-detail-title" class="heavy"></h2></div>
+    </div>
+    <div class="detail-info-row">
+      <span id="trip-detail-location"></span>
+      <span id="trip-detail-dates"></span>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="items" data-i18n="tabItems"></button>
+      <button class="tab-btn" data-tab="spots" data-i18n="tabSpots"></button>
+      <button class="tab-btn" data-tab="costs" data-i18n="tabCosts"></button>
+      <button class="tab-btn" data-tab="prep" data-i18n="tabPrep"></button>
+      <button class="tab-btn" data-tab="memories" data-i18n="tabMemories"></button>
+    </div>
+    <div id="tab-content" class="tab-content"></div>
+  </div>
+
+  <div id="screen-item-detail" class="hidden">
+    <div class="detail-topbar">
+      <button id="item-detail-back" class="icon-only-btn" data-i18n-aria="back">←</button>
+      <div class="detail-topbar-title" id="item-detail-topbar-title"></div>
+      <button id="item-detail-edit" class="icon-only-btn" data-i18n-aria="editItem">✎</button>
+      <button id="item-detail-delete" class="icon-only-btn danger" data-i18n-aria="deleteItem">🗑</button>
+    </div>
+    <div class="detail-page-content" id="item-detail-content"></div>
+  </div>
+</div>
+
+<!-- Trip modal -->
+<div class="modal-overlay" id="trip-modal">
+  <div class="modal-panel">
+    <h3 id="trip-modal-title"></h3>
+    <label data-i18n="titleLabel"></label>
+    <input type="text" id="trip-form-title" data-i18n-placeholder="titlePlaceholder">
+    <label data-i18n="destinationLabel"></label>
+    <input type="text" id="trip-form-destination" data-i18n-placeholder="destinationPlaceholder">
+    <label data-i18n="scheduleLabel"></label>
+    <button type="button" class="date-field placeholder" id="trip-form-daterange" onclick="openRangeDatePicker('trip-form-daterange')"></button>
+    <label data-i18n="coverLabel"></label>
+    <input type="file" id="trip-form-cover-file" accept="image/*" onchange="handleCoverFile(this)">
+    <div id="cover-preview"></div>
+    <label data-i18n="fallbackIconLabel"></label>
+    <div class="icon-picker" id="trip-icon-picker"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="trip-form-cancel" data-i18n="cancel"></button>
+      <button class="btn-primary" id="trip-form-save" data-i18n="save"></button>
+    </div>
+    <button class="btn-delete" id="trip-delete-btn" data-i18n="deleteTripAction"></button>
+  </div>
+</div>
+
+<!-- Item modal -->
+<div class="modal-overlay" id="item-modal">
+  <div class="modal-panel">
+    <h3 id="item-modal-title"></h3>
+    <label data-i18n="titleLabel"></label>
+    <input type="text" id="item-form-title" data-i18n-placeholder="itemTitlePlaceholder">
+    <label data-i18n="typeLabel"></label>
+    <div class="type-picker" id="item-type-picker"></div>
+    <label data-i18n="dateLabel"></label>
+    <button type="button" class="date-field placeholder" id="item-form-date" onclick="openDatePicker('item-form-date')"></button>
+    <div class="form-row-2">
+      <div><label data-i18n="startTimeLabel"></label><input type="time" id="item-form-start-time"></div>
+      <div><label data-i18n="endTimeLabel"></label><input type="time" id="item-form-end-time"></div>
+    </div>
+    <label data-i18n="placeLabel"></label>
+    <input type="text" id="item-form-place" data-i18n-placeholder="placePlaceholder">
+    <label data-i18n="contactLabel"></label>
+    <input type="text" id="item-form-contact" data-i18n-placeholder="contactPlaceholder">
+    <div class="form-row-2">
+      <div><label data-i18n="checkInLabel"></label><input type="text" id="item-form-checkin" data-i18n-placeholder="timePlaceholder"></div>
+      <div><label data-i18n="checkOutLabel"></label><input type="text" id="item-form-checkout" data-i18n-placeholder="timePlaceholder"></div>
+    </div>
+    <label data-i18n="urlLabel"></label>
+    <input type="text" id="item-form-url" data-i18n-placeholder="urlPlaceholder">
+    <label data-i18n="costLabel"></label>
+    <input type="number" id="item-form-cost" placeholder="0" min="0">
+    <label class="checkbox-label"><input type="checkbox" id="item-form-paid"> <span data-i18n="paidLabel"></span></label>
+    <label data-i18n="memoLabel"></label>
+    <textarea id="item-form-memo" data-i18n-placeholder="memoPlaceholder"></textarea>
+    <label data-i18n="attachmentLabel"></label>
+    <input type="file" id="item-form-file" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx" onchange="handleAttachmentFile(this)">
+    <div class="attachment-hint" data-i18n="attachmentHint"></div>
+    <div id="attachment-preview"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="item-form-cancel" data-i18n="cancel"></button>
+      <button class="btn-primary" id="item-form-save" data-i18n="save"></button>
+    </div>
+    <button class="btn-delete" id="item-delete-btn" data-i18n="deleteItemAction"></button>
+  </div>
+</div>
+
+<!-- Candidate spot modal -->
+<div class="modal-overlay" id="candidate-modal">
+  <div class="modal-panel">
+    <h3 id="candidate-modal-title"></h3>
+    <label data-i18n="titleLabel"></label>
+    <input type="text" id="candidate-form-title" data-i18n-placeholder="candidateTitlePlaceholder">
+    <label data-i18n="typeLabel"></label>
+    <div class="type-picker" id="candidate-type-picker"></div>
+    <label data-i18n="placeLabelOptional"></label>
+    <input type="text" id="candidate-form-place" data-i18n-placeholder="placePlaceholder">
+    <label data-i18n="contactLabel"></label>
+    <input type="text" id="candidate-form-contact" data-i18n-placeholder="contactPlaceholder">
+    <div class="form-row-2">
+      <div><label data-i18n="checkInLabel"></label><input type="text" id="candidate-form-checkin" data-i18n-placeholder="timePlaceholder"></div>
+      <div><label data-i18n="checkOutLabel"></label><input type="text" id="candidate-form-checkout" data-i18n-placeholder="timePlaceholder"></div>
+    </div>
+    <label data-i18n="urlLabel"></label>
+    <input type="text" id="candidate-form-url" data-i18n-placeholder="urlPlaceholder">
+    <div class="modal-actions">
+      <button class="btn-secondary" id="candidate-form-cancel" data-i18n="cancel"></button>
+      <button class="btn-primary" id="candidate-form-save" data-i18n="save"></button>
+    </div>
+    <button class="btn-delete" id="candidate-delete-btn" data-i18n="deleteCandidateAction"></button>
+  </div>
+</div>
+
+<!-- Note modal -->
+<div class="modal-overlay" id="note-modal">
+  <div class="modal-panel">
+    <h3 id="note-modal-title"></h3>
+    <label data-i18n="memoLabel"></label>
+    <textarea id="note-form-text" data-i18n-placeholder="notePlaceholder" rows="6"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="note-form-cancel" data-i18n="cancel"></button>
+      <button class="btn-primary" id="note-form-save" data-i18n="save"></button>
+    </div>
+    <button class="btn-delete" id="note-delete-btn" data-i18n="deleteNoteAction"></button>
+  </div>
+</div>
+
+<!-- Memory modal -->
+<div class="modal-overlay" id="memory-modal">
+  <div class="modal-panel">
+    <h3 id="memory-modal-title"></h3>
+    <label data-i18n="photoLabel"></label>
+    <input type="file" id="memory-form-file" accept="image/*" onchange="handleMemoryFile(this)">
+    <div id="memory-photo-preview"></div>
+    <label data-i18n="memoLabel"></label>
+    <textarea id="memory-form-text" rows="5" data-i18n-placeholder="memoryPlaceholder"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="memory-form-cancel" data-i18n="cancel"></button>
+      <button class="btn-primary" id="memory-form-save" data-i18n="save"></button>
+    </div>
+    <button class="btn-delete" id="memory-delete-btn" data-i18n="deleteMemoryAction"></button>
+  </div>
+</div>
+
+<div id="date-picker-popup">
+  <div class="dp-header">
+    <button type="button" onclick="changeDatePickerMonth(-1)">‹</button>
+    <div class="dp-title" id="date-picker-title"></div>
+    <button type="button" onclick="changeDatePickerMonth(1)">›</button>
+  </div>
+  <div class="dp-weekdays" id="date-picker-weekdays"></div>
+  <div class="dp-grid" id="date-picker-grid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- i18n ---------- */
+  const LANG = (navigator.language || 'ja').toLowerCase().startsWith('en') ? 'en' : 'ja';
+  function locale(){ return LANG === 'en' ? 'en-US' : 'ja-JP'; }
+  const STR = {
+    ja: {
+      addTrip:'＋ 旅行を追加', upcoming:'旅行前', past:'旅行済み',
+      homeEmptyUpcoming:'まだ旅の予定がありません。<br>「＋ 旅行を追加」から最初のしおりを作りましょう。',
+      homeEmptyPast:'まだ旅行済みの旅はありません。',
+      editTrip:'旅行を編集', newTrip:'新しい旅行',
+      titleLabel:'タイトル', titlePlaceholder:'例：Honeymoon (California, USA)',
+      destinationLabel:'行き先（任意）', destinationPlaceholder:'例：アメリカ（ロサンゼルス・カリフォルニア）',
+      scheduleLabel:'日程', selectSchedule:'日程を選択', selectEndDate:'終了日を選択',
+      coverLabel:'カバー写真（任意）', coverEmpty:'写真は未設定です（設定しない場合は自動の色になります）',
+      fallbackIconLabel:'写真未設定時のアイコン',
+      cancel:'キャンセル', save:'保存', deleteTripAction:'この旅行を削除する',
+      tabItems:'日程', tabSpots:'スポット', tabCosts:'費用', tabPrep:'準備', tabMemories:'思い出',
+      addItem:'＋ 予定を追加', itemEmptyDay:'この日の予定はまだありません。',
+      editItem:'予定を編集', newItem:'予定を追加', itemTitlePlaceholder:'例：ディズニーランド',
+      typeLabel:'タイプ', dateLabel:'日付', selectDate:'日付を選択',
+      startTimeLabel:'開始時刻', endTimeLabel:'終了時刻',
+      placeLabel:'場所', placeLabelOptional:'場所（任意）', placePlaceholder:'例：Disneyland Park, Anaheim',
+      contactLabel:'連絡先（任意）', contactPlaceholder:'例：+1 714-781-4636',
+      checkInLabel:'チェックイン時間（任意）', checkOutLabel:'チェックアウト時間（任意）', timePlaceholder:'例：15:00',
+      urlLabel:'URL（任意）', urlPlaceholder:'例：https://...',
+      costLabel:'費用（円）', paidLabel:'支払い済み',
+      memoLabel:'メモ', memoPlaceholder:'メモ（任意）',
+      attachmentLabel:'添付ファイル', attachmentHint:'PDF・画像など、1件あたり650KBまで（Firestoreの制限のため）', attachmentEmpty:'添付ファイルはありません', open:'開く',
+      deleteItemAction:'この予定を削除する',
+      mapShow:'🗺 マップで表示', mapOpen:'🗺 Google マップで開く',
+      scheduledSpots:'予定に組み込み済み', candidateSpots:'候補スポット',
+      noScheduledSpots:'場所が設定された予定はまだありません。', noCandidateSpots:'まだ候補はありません。',
+      addCandidate:'＋ 候補スポットを追加', editCandidate:'候補スポットを編集', newCandidate:'候補スポットを追加',
+      candidateTitlePlaceholder:'例：気になっているカフェ', deleteCandidateAction:'この候補を削除する',
+      total:'合計', paidStat:'支払済み', unpaid:'未払い', unpaidTag:'未払い',
+      noCosts:'費用が登録された予定はまだありません。<br>予定に費用を入力すると、ここに集計されます。',
+      checklistTab:'✅ チェックリスト', notesTab:'📝 メモ',
+      categoryPlaceholder:'カテゴリ（任意）', checklistItemPlaceholder:'項目を入力',
+      checklistEmpty:'チェックリストはまだ空です。<br>持ち物や準備することを追加しましょう。',
+      addNote:'＋ メモを追加', notesEmpty:'メモはまだありません。<br>気づいたことを書き留めましょう。',
+      editNote:'メモを編集', newNote:'メモを追加', notePlaceholder:'メモを入力', deleteNoteAction:'このメモを削除する',
+      addMemory:'＋ 思い出を追加', memoriesEmpty:'まだ思い出が記録されていません。<br>旅の写真や気づいたことを残しましょう。',
+      editMemory:'思い出を編集', newMemory:'思い出を追加', photoLabel:'写真（任意）',
+      memoryPlaceholder:'思い出を書き留めましょう', deleteMemoryAction:'この思い出を削除する',
+      saved:'保存しました', deleted:'削除しました',
+      confirmDeleteTrip:'この旅行を削除しますか？予定・費用・メモ・思い出もすべて削除されます。',
+      confirmDeleteItem:'この予定を削除しますか？', confirmDeleteCandidate:'この候補を削除しますか？',
+      confirmDeleteNote:'このメモを削除しますか？', confirmDeleteMemory:'この思い出を削除しますか？',
+      alertTripRequired:'タイトルと日程を入力してください', alertItemRequired:'タイトルと日付を入力してください',
+      alertCandidateRequired:'タイトルを入力してください', alertMemoryRequired:'写真かメモのどちらかを入力してください',
+      alertFileTooBig:'ファイルサイズが大きすぎます。650KB以下のファイルを選択してください。',
+      alertFileFailed:'ファイルの読み込みに失敗しました', alertImageFailed:'画像の読み込みに失敗しました',
+      alertCoverFailed:'カバー写真の保存に失敗しました', alertAttachmentFailed:'添付ファイルの保存に失敗しました',
+      alertAttachmentNotFound:'ファイルが見つかりませんでした',
+      alertPopupBlocked:'ポップアップがブロックされました。ブラウザの設定をご確認ください。',
+      alertNoMapPlaces:'地図に表示できる場所がまだ登録されていません',
+      back:'戻る', deleteItem:'削除',
+      itemDetailDate:'日付', itemDetailTime:'時刻', itemDetailAddress:'住所', itemDetailContact:'連絡先',
+      itemDetailCheckIn:'チェックイン', itemDetailCheckOut:'チェックアウト', itemDetailUrl:'URL',
+      itemDetailCost:'費用', itemDetailMemo:'メモ', itemDetailAttachment:'添付',
+      paidSuffix:'（支払済み）', unpaidSuffix:'（未払い）',
+      addToSchedule:'＋ 予定に追加',
+      dayOf: n => `${n}日目`
+    },
+    en: {
+      addTrip:'＋ Add trip', upcoming:'Upcoming', past:'Past',
+      homeEmptyUpcoming:'No trips yet.<br>Tap "＋ Add trip" to create your first itinerary.',
+      homeEmptyPast:'No past trips yet.',
+      editTrip:'Edit trip', newTrip:'New trip',
+      titleLabel:'Title', titlePlaceholder:'e.g. Honeymoon (California, USA)',
+      destinationLabel:'Destination (optional)', destinationPlaceholder:'e.g. Los Angeles, California, USA',
+      scheduleLabel:'Dates', selectSchedule:'Select dates', selectEndDate:'Select end date',
+      coverLabel:'Cover photo (optional)', coverEmpty:'No photo set (a colored icon will be used instead)',
+      fallbackIconLabel:'Fallback icon (used if no photo)',
+      cancel:'Cancel', save:'Save', deleteTripAction:'Delete this trip',
+      tabItems:'Itinerary', tabSpots:'Spots', tabCosts:'Costs', tabPrep:'Prep', tabMemories:'Memories',
+      addItem:'＋ Add plan', itemEmptyDay:'Nothing planned for this day yet.',
+      editItem:'Edit plan', newItem:'Add plan', itemTitlePlaceholder:'e.g. Disneyland',
+      typeLabel:'Type', dateLabel:'Date', selectDate:'Select date',
+      startTimeLabel:'Start time', endTimeLabel:'End time',
+      placeLabel:'Place', placeLabelOptional:'Place (optional)', placePlaceholder:'e.g. Disneyland Park, Anaheim',
+      contactLabel:'Contact (optional)', contactPlaceholder:'e.g. +1 714-781-4636',
+      checkInLabel:'Check-in time (optional)', checkOutLabel:'Check-out time (optional)', timePlaceholder:'e.g. 3:00 PM',
+      urlLabel:'URL (optional)', urlPlaceholder:'e.g. https://...',
+      costLabel:'Cost', paidLabel:'Paid',
+      memoLabel:'Notes', memoPlaceholder:'Notes (optional)',
+      attachmentLabel:'Attachment', attachmentHint:'PDF, images, etc. Up to 650KB per file (Firestore limit)', attachmentEmpty:'No attachment', open:'Open',
+      deleteItemAction:'Delete this plan',
+      mapShow:'🗺 View on map', mapOpen:'🗺 Open in Google Maps',
+      scheduledSpots:'Already scheduled', candidateSpots:'Candidate spots',
+      noScheduledSpots:'No scheduled plans have a place set yet.', noCandidateSpots:'No candidates yet.',
+      addCandidate:'＋ Add a candidate spot', editCandidate:'Edit candidate spot', newCandidate:'Add candidate spot',
+      candidateTitlePlaceholder:'e.g. A cafe we might try', deleteCandidateAction:'Delete this candidate',
+      total:'Total', paidStat:'Paid', unpaid:'Unpaid', unpaidTag:'Unpaid',
+      noCosts:'No plans with a cost yet.<br>Add a cost to a plan and it will show up here.',
+      checklistTab:'✅ Checklist', notesTab:'📝 Notes',
+      categoryPlaceholder:'Category (optional)', checklistItemPlaceholder:'Add an item',
+      checklistEmpty:'Your checklist is empty.<br>Add things to pack or prepare.',
+      addNote:'＋ Add note', notesEmpty:'No notes yet.<br>Jot down anything worth remembering.',
+      editNote:'Edit note', newNote:'Add note', notePlaceholder:'Write a note', deleteNoteAction:'Delete this note',
+      addMemory:'＋ Add memory', memoriesEmpty:'No memories yet.<br>Save photos and thoughts from the trip.',
+      editMemory:'Edit memory', newMemory:'Add memory', photoLabel:'Photo (optional)',
+      memoryPlaceholder:'Write down a memory', deleteMemoryAction:'Delete this memory',
+      saved:'Saved', deleted:'Deleted',
+      confirmDeleteTrip:'Delete this trip? All its plans, costs, notes, and memories will be deleted too.',
+      confirmDeleteItem:'Delete this plan?', confirmDeleteCandidate:'Delete this candidate?',
+      confirmDeleteNote:'Delete this note?', confirmDeleteMemory:'Delete this memory?',
+      alertTripRequired:'Please enter a title and dates', alertItemRequired:'Please enter a title and date',
+      alertCandidateRequired:'Please enter a title', alertMemoryRequired:'Please add a photo or a note',
+      alertFileTooBig:'That file is too large. Please choose a file under 650KB.',
+      alertFileFailed:'Failed to read the file', alertImageFailed:'Failed to read the image',
+      alertCoverFailed:'Failed to save the cover photo', alertAttachmentFailed:'Failed to save the attachment',
+      alertAttachmentNotFound:'File not found',
+      alertPopupBlocked:'The pop-up was blocked. Please check your browser settings.',
+      alertNoMapPlaces:'No places have been added to show on the map yet',
+      back:'Back', deleteItem:'Delete',
+      itemDetailDate:'Date', itemDetailTime:'Time', itemDetailAddress:'Address', itemDetailContact:'Contact',
+      itemDetailCheckIn:'Check-in', itemDetailCheckOut:'Check-out', itemDetailUrl:'URL',
+      itemDetailCost:'Cost', itemDetailMemo:'Notes', itemDetailAttachment:'Attachment',
+      paidSuffix:' (Paid)', unpaidSuffix:' (Unpaid)',
+      addToSchedule:'＋ Add to schedule',
+      dayOf: n => `Day ${n}`
+    }
+  };
+  function t(key){
+    const v = (STR[LANG] && STR[LANG][key] !== undefined) ? STR[LANG][key] : STR.ja[key];
+    return typeof v === 'function' ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v;
+  }
+
+  const TRIP_ICONS = ['✈️','🏖️','⛰️','🏙️','🚗','🚄','⛴️','🏕️'];
+  const ITEM_TYPES = [
+    { id:'move', label:{ja:'移動',en:'Transport'}, icon:'✈️', color:'#4C7EF3' },
+    { id:'stay', label:{ja:'宿泊',en:'Stay'}, icon:'🛏️', color:'#3FB27F' },
+    { id:'food', label:{ja:'食事',en:'Food'}, icon:'🍽️', color:'#F0954A' },
+    { id:'activity', label:{ja:'観光',en:'Activity'}, icon:'🎡', color:'#B15FE8' },
+    { id:'shop', label:{ja:'買い物',en:'Shopping'}, icon:'🛍️', color:'#E85C8A' },
+    { id:'other', label:{ja:'その他',en:'Other'}, icon:'📍', color:'#9A958A' }
+  ];
+  const GRADIENTS = [
+    'linear-gradient(135deg,#3B5FE0,#7B4CE8)',
+    'linear-gradient(135deg,#2FA37A,#1E6E86)',
+    'linear-gradient(135deg,#E8794C,#C24C7A)',
+    'linear-gradient(135deg,#6C4CE8,#C24CB0)',
+    'linear-gradient(135deg,#4C8EE8,#2FBF9E)'
+  ];
+  const MAX_ATTACHMENT_BYTES = 650 * 1024; // Firestore documents cap out around 1MB; this leaves headroom after base64 encoding
+
+  let trips = [];
+  let tripDataCache = {};
+  let coverCache = {};
+  let currentTripId = null;
+  let currentTab = 'items';
+  let homeFilter = 'upcoming';
+  let selectedDay = null;
+  let prepSubTab = 'checklist';
+
+  let editingTripId = null;
+  let editingItemId = null;
+  let editingNoteId = null;
+  let editingCandidateId = null;
+  let editingMemoryId = null;
+  let promotingFromCandidateId = null;
+  let currentDetailItemId = null;
+
+  let selectedTripIcon = TRIP_ICONS[0];
+  let selectedItemType = ITEM_TYPES[0].id;
+  let selectedCandidateType = ITEM_TYPES[0].id;
+
+  let pendingAttachment = null;
+  let removeAttachmentFlag = false;
+  let existingAttachmentMeta = null;
+
+  let pendingCoverPhoto = null;
+  let removeCoverFlag = false;
+  let existingCoverDataUrl = null;
+
+  let pendingMemoryPhoto = null;
+
+  /* ---------- Storage ---------- */
+  async function loadTrips(){
+    try{ const res = await window.storage.get('trips', true); trips = res && res.value ? JSON.parse(res.value) : []; }
+    catch(e){ trips = []; }
+  }
+  async function saveTrips(){
+    try{ await window.storage.set('trips', JSON.stringify(trips), true); }
+    catch(e){ console.error('save failed', e); }
+  }
+  async function loadTripData(id){
+    if(tripDataCache[id]) return tripDataCache[id];
+    let data = { items: [], candidates: [], checklist: [], notes: [], memories: [] };
+    try{
+      const res = await window.storage.get('trip:'+id, true);
+      if(res && res.value) data = Object.assign(data, JSON.parse(res.value));
+    }catch(e){ /* not found yet */ }
+    tripDataCache[id] = data;
+    return data;
+  }
+  async function saveTripData(id){
+    try{ await window.storage.set('trip:'+id, JSON.stringify(tripDataCache[id]), true); }
+    catch(e){ console.error('save failed', e); }
+  }
+  async function deleteAttachmentStorage(itemId){
+    try{ await window.storage.delete('attachment:'+itemId, true); }catch(e){}
+  }
+  async function fetchCover(id){
+    try{ const res = await window.storage.get('cover:'+id, true); if(res && res.value){ coverCache[id] = res.value; return res.value; } }
+    catch(e){}
+    return null;
+  }
+
+  /* ---------- Helpers ---------- */
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function val(id){ return document.getElementById(id).value; }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function normalizeUrl(u){ if(!u) return ''; return /^https?:\/\//i.test(u) ? u : ('https://' + u); }
+  function typeInfo(id){ return ITEM_TYPES.find(x => x.id === id) || ITEM_TYPES[ITEM_TYPES.length-1]; }
+  function gradientFor(id){
+    let h = 0;
+    for(const ch of String(id)) h = (h*31 + ch.charCodeAt(0)) >>> 0;
+    return GRADIENTS[h % GRADIENTS.length];
+  }
+  function formatISODate(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function formatDateJP(dateStr){
+    if(!dateStr) return '';
+    const d = new Date(dateStr+'T00:00:00');
+    return new Intl.DateTimeFormat(locale(), { year:'numeric', month:'numeric', day:'numeric', weekday:'short' }).format(d);
+  }
+  function formatDateRange(start, end){
+    const s = new Date(start+'T00:00:00');
+    const e = new Date(end+'T00:00:00');
+    const startStr = new Intl.DateTimeFormat(locale(), { year:'numeric', month:'numeric', day:'numeric' }).format(s);
+    const endStr = new Intl.DateTimeFormat(locale(), s.getFullYear()===e.getFullYear() ? { month:'numeric', day:'numeric' } : { year:'numeric', month:'numeric', day:'numeric' }).format(e);
+    return `${startStr} - ${endStr}`;
+  }
+  function formatYen(n){ return '¥' + Number(n||0).toLocaleString('ja-JP'); }
+  function formatDateTime(ts){
+    const d = new Date(ts);
+    return new Intl.DateTimeFormat(locale(), { year:'numeric', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }).format(d);
+  }
+  function sortKey(it){ return (it.date||'') + (it.startTime || ''); }
+  function dayPillLabel(dateStr){
+    const dt = new Date(dateStr+'T00:00:00');
+    const wd = new Intl.DateTimeFormat(locale(), { weekday:'short' }).format(dt);
+    return { wd, day: dt.getDate() };
+  }
+  function monthTitle(year, month){
+    return new Intl.DateTimeFormat(locale(), { year:'numeric', month:'long' }).format(new Date(year, month, 1));
+  }
+  function mondayFirstWeekdayNames(){
+    const names = [];
+    for(let i=0; i<7; i++){ names.push(new Intl.DateTimeFormat(locale(), { weekday:'short' }).format(new Date(2024,0,1+i))); }
+    return names;
+  }
+  function buildDayList(trip){
+    const days = [];
+    let d = new Date(trip.start+'T00:00:00');
+    const end = new Date(trip.end+'T00:00:00');
+    while(d <= end){ days.push(formatISODate(d)); d.setDate(d.getDate()+1); }
+    return days;
+  }
+  function computeCostStats(items){
+    const withCost = items.filter(it => Number(it.cost) > 0);
+    const total = withCost.reduce((s,it) => s + Number(it.cost), 0);
+    const paid = withCost.filter(it => it.paid).reduce((s,it) => s + Number(it.cost), 0);
+    return { total, paid, unpaid: total - paid, items: withCost };
+  }
+  function showToast(msg){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){
+    document.getElementById(id).classList.remove('open');
+    closeDatePicker();
+    if(id === 'item-modal') promotingFromCandidateId = null;
+  }
+  function renderIconPicker(containerId, icons, selected, onSelect){
+    const el = document.getElementById(containerId);
+    el.innerHTML = icons.map(ic => `<button type="button" class="icon-btn ${ic===selected?'selected':''}" data-icon="${ic}">${ic}</button>`).join('');
+    el.querySelectorAll('.icon-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        onSelect(btn.dataset.icon);
+      });
+    });
+  }
+  function renderTypeChips(containerId, selected, onSelect){
+    const el = document.getElementById(containerId);
+    el.innerHTML = ITEM_TYPES.map(ty => `<button type="button" class="type-chip ${ty.id===selected?'selected':''}" data-type="${ty.id}" style="--chip-color:${ty.color}">${ty.icon} ${ty.label[LANG]}</button>`).join('');
+    el.querySelectorAll('.type-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.type-chip').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        onSelect(btn.dataset.type);
+      });
+    });
+  }
+  function compressImage(file, maxDim, quality){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if(w >= h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else if(h > w && h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  function applyStaticTranslations(){
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+    document.getElementById('date-picker-weekdays').innerHTML = mondayFirstWeekdayNames().map(n => `<span>${n}</span>`).join('');
+  }
+
+  /* ---------- Custom date picker (single + range, Monday start, Gregorian year) ---------- */
+  let datePickerMode = 'single';
+  let datePickerTarget = null;
+  let datePickerViewYear = null;
+  let datePickerViewMonth = null;
+  let rangeStart = null;
+  let rangeEnd = null;
+  let rangeSelecting = 'start';
+
+  function setDateField(id, dateStr){
+    const btn = document.getElementById(id);
+    btn.dataset.value = dateStr || '';
+    if(dateStr){ btn.textContent = formatDateJP(dateStr); btn.classList.remove('placeholder'); }
+    else { btn.textContent = t('selectDate'); btn.classList.add('placeholder'); }
+  }
+  function getDateField(id){ return document.getElementById(id).dataset.value || ''; }
+  function renderRangeFieldDisplay(fieldId){
+    const btn = document.getElementById(fieldId);
+    if(btn.dataset.start && btn.dataset.end){
+      btn.textContent = formatDateRange(btn.dataset.start, btn.dataset.end);
+      btn.classList.remove('placeholder');
+    } else if(btn.dataset.start){
+      btn.textContent = `${formatDateJP(btn.dataset.start)} 〜 ${t('selectEndDate')}`;
+      btn.classList.remove('placeholder');
+    } else {
+      btn.textContent = t('selectSchedule');
+      btn.classList.add('placeholder');
+    }
+  }
+  function openDatePicker(fieldId){
+    datePickerMode = 'single';
+    datePickerTarget = fieldId;
+    const btn = document.getElementById(fieldId);
+    const current = btn.dataset.value;
+    const d = current ? new Date(current+'T00:00:00') : new Date();
+    datePickerViewYear = d.getFullYear();
+    datePickerViewMonth = d.getMonth();
+    renderDatePickerCalendar();
+    positionDatePickerPopup(btn);
+    document.getElementById('date-picker-popup').classList.add('open');
+  }
+  function openRangeDatePicker(fieldId){
+    datePickerMode = 'range';
+    datePickerTarget = fieldId;
+    const btn = document.getElementById(fieldId);
+    rangeStart = btn.dataset.start || null;
+    rangeEnd = btn.dataset.end || null;
+    rangeSelecting = (rangeStart && rangeEnd) ? 'start' : (rangeStart ? 'end' : 'start');
+    const base = rangeStart ? new Date(rangeStart+'T00:00:00') : new Date();
+    datePickerViewYear = base.getFullYear();
+    datePickerViewMonth = base.getMonth();
+    renderDatePickerCalendar();
+    positionDatePickerPopup(btn);
+    document.getElementById('date-picker-popup').classList.add('open');
+  }
+  function positionDatePickerPopup(btn){
+    const rect = btn.getBoundingClientRect();
+    const popup = document.getElementById('date-picker-popup');
+    const popupWidth = 280;
+    const popupHeightEstimate = 320;
+    let top = rect.bottom + 6;
+    let left = rect.left;
+    if(left + popupWidth > window.innerWidth - 10) left = window.innerWidth - popupWidth - 10;
+    if(left < 10) left = 10;
+    if(top + popupHeightEstimate > window.innerHeight - 10){
+      top = rect.top - popupHeightEstimate - 6;
+      if(top < 10) top = 10;
+    }
+    popup.style.top = top + 'px';
+    popup.style.left = left + 'px';
+  }
+  function renderDatePickerCalendar(){
+    document.getElementById('date-picker-title').textContent = monthTitle(datePickerViewYear, datePickerViewMonth);
+    const firstDay = new Date(datePickerViewYear, datePickerViewMonth, 1);
+    const offset = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(datePickerViewYear, datePickerViewMonth+1, 0).getDate();
+    const todayStr = formatISODate(new Date());
+    const singleSelected = datePickerMode === 'single' ? document.getElementById(datePickerTarget).dataset.value : null;
+    let cells = '';
+    for(let i=0; i<offset; i++) cells += `<div class="dp-cell dp-empty"></div>`;
+    for(let day=1; day<=daysInMonth; day++){
+      const dateStr = `${datePickerViewYear}-${String(datePickerViewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      let cls = 'dp-cell dp-day';
+      if(dateStr === todayStr) cls += ' today';
+      if(datePickerMode === 'single'){
+        if(dateStr === singleSelected) cls += ' selected';
+      } else {
+        if(dateStr === rangeStart || dateStr === rangeEnd) cls += ' selected';
+        else if(rangeStart && rangeEnd && dateStr > rangeStart && dateStr < rangeEnd) cls += ' in-range';
+      }
+      cells += `<button type="button" class="${cls}" onclick="onDatePickerDayClick('${dateStr}')">${day}</button>`;
+    }
+    document.getElementById('date-picker-grid').innerHTML = cells;
+  }
+  function changeDatePickerMonth(delta){
+    datePickerViewMonth += delta;
+    if(datePickerViewMonth < 0){ datePickerViewMonth = 11; datePickerViewYear--; }
+    if(datePickerViewMonth > 11){ datePickerViewMonth = 0; datePickerViewYear++; }
+    renderDatePickerCalendar();
+  }
+  function onDatePickerDayClick(dateStr){
+    if(datePickerMode === 'single'){
+      setDateField(datePickerTarget, dateStr);
+      closeDatePicker();
+    } else {
+      const btn = document.getElementById(datePickerTarget);
+      if(rangeSelecting === 'start' || !rangeStart || (rangeStart && rangeEnd)){
+        rangeStart = dateStr; rangeEnd = null; rangeSelecting = 'end';
+        btn.dataset.start = rangeStart; btn.dataset.end = '';
+        renderRangeFieldDisplay(datePickerTarget);
+        renderDatePickerCalendar();
+      } else {
+        if(dateStr < rangeStart){ rangeEnd = rangeStart; rangeStart = dateStr; }
+        else { rangeEnd = dateStr; }
+        btn.dataset.start = rangeStart; btn.dataset.end = rangeEnd;
+        renderRangeFieldDisplay(datePickerTarget);
+        rangeSelecting = 'start';
+        closeDatePicker();
+      }
+    }
+  }
+  function closeDatePicker(){
+    document.getElementById('date-picker-popup').classList.remove('open');
+    datePickerTarget = null;
+  }
+
+  /* ---------- Navigation ---------- */
+  async function goHome(){
+    document.getElementById('screen-trip').classList.add('hidden');
+    document.getElementById('screen-home').classList.remove('hidden');
+    currentTripId = null;
+    await renderHome();
+  }
+  async function openTrip(id){
+    currentTripId = id;
+    currentTab = 'items';
+    selectedDay = null;
+    prepSubTab = 'checklist';
+    document.getElementById('screen-home').classList.add('hidden');
+    document.getElementById('screen-trip').classList.remove('hidden');
+    await renderTripDetail();
+  }
+
+  /* ---------- Home rendering ---------- */
+  function setHomeFilter(f){ homeFilter = f; renderHome(); }
+  async function renderHome(){
+    const today = formatISODate(new Date());
+    const upcoming = trips.filter(x => x.end >= today).sort((a,b) => a.start.localeCompare(b.start));
+    const past = trips.filter(x => x.end < today).sort((a,b) => b.end.localeCompare(a.end));
+    document.getElementById('home-tabs').innerHTML = `
+      <button type="button" class="home-tab-btn ${homeFilter==='upcoming'?'active':''}" onclick="setHomeFilter('upcoming')">${t('upcoming')} (${upcoming.length})</button>
+      <button type="button" class="home-tab-btn ${homeFilter==='past'?'active':''}" onclick="setHomeFilter('past')">${t('past')} (${past.length})</button>
+    `;
+    const list = homeFilter === 'upcoming' ? upcoming : past;
+    const container = document.getElementById('trip-list');
+    if(list.length === 0){
+      container.innerHTML = `<div class="empty-state">${homeFilter==='upcoming' ? t('homeEmptyUpcoming') : t('homeEmptyPast')}</div>`;
+      return;
+    }
+    await Promise.all(list.filter(x => x.hasCover && !coverCache[x.id]).map(x => fetchCover(x.id)));
+    container.innerHTML = list.map(x => {
+      const isPast = x.end < today;
+      const photo = coverCache[x.id];
+      return `
+        <div class="trip-card" onclick="openTrip('${x.id}')">
+          <div class="trip-photo" style="${photo ? `background-image:url('${photo}');` : ''}">${photo ? '' : `<div class="trip-photo-fallback">${x.icon}</div>`}</div>
+          <div class="trip-card-body">
+            <div class="trip-card-row">
+              <span class="badge ${isPast?'past':''}">${isPast?t('past'):t('upcoming')}</span>
+              ${x.destination ? `<span class="trip-location">📍 ${escapeHtml(x.destination)}</span>` : ''}
+            </div>
+            <h3 class="heavy">${escapeHtml(x.title)}</h3>
+            <div class="trip-dates">📅 ${formatDateRange(x.start, x.end)}</div>
+            <button type="button" class="trip-edit-icon" onclick="event.stopPropagation(); editTripById('${x.id}')">✎</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  function editTripById(id){ openTripModal(trips.find(x => x.id === id)); }
+
+  /* ---------- Trip modal ---------- */
+  async function openTripModal(trip){
+    editingTripId = trip ? trip.id : null;
+    document.getElementById('trip-modal-title').textContent = trip ? t('editTrip') : t('newTrip');
+    document.getElementById('trip-form-title').value = trip ? trip.title : '';
+    document.getElementById('trip-form-destination').value = trip ? (trip.destination || '') : '';
+    const rangeBtn = document.getElementById('trip-form-daterange');
+    rangeBtn.dataset.start = trip ? trip.start : '';
+    rangeBtn.dataset.end = trip ? trip.end : '';
+    renderRangeFieldDisplay('trip-form-daterange');
+    selectedTripIcon = trip ? trip.icon : TRIP_ICONS[0];
+    renderIconPicker('trip-icon-picker', TRIP_ICONS, selectedTripIcon, icon => { selectedTripIcon = icon; });
+    document.getElementById('trip-delete-btn').style.display = trip ? 'block' : 'none';
+    document.getElementById('trip-form-cover-file').value = '';
+    pendingCoverPhoto = null; removeCoverFlag = false; existingCoverDataUrl = null;
+    if(trip && trip.hasCover){ existingCoverDataUrl = coverCache[trip.id] || await fetchCover(trip.id); }
+    renderCoverPreview();
+    openModal('trip-modal');
+  }
+  function renderCoverPreview(){
+    const el = document.getElementById('cover-preview');
+    const photo = pendingCoverPhoto || (!removeCoverFlag ? existingCoverDataUrl : null);
+    if(photo){
+      el.innerHTML = `<div class="cover-preview-wrap"><img src="${photo}"><button type="button" class="delete-btn cover-remove-btn" onclick="removeCoverPhoto()">×</button></div>`;
+    } else {
+      el.innerHTML = `<div class="attachment-empty">${t('coverEmpty')}</div>`;
+    }
+  }
+  async function handleCoverFile(input){
+    const file = input.files[0];
+    if(!file) return;
+    try{ pendingCoverPhoto = await compressImage(file, 800, 0.6); removeCoverFlag = false; renderCoverPreview(); }
+    catch(e){ alert(t('alertImageFailed')); }
+  }
+  function removeCoverPhoto(){
+    pendingCoverPhoto = null; removeCoverFlag = true;
+    document.getElementById('trip-form-cover-file').value = '';
+    renderCoverPreview();
+  }
+  async function saveTripForm(){
+    const title = val('trip-form-title').trim();
+    const destination = val('trip-form-destination').trim();
+    const rangeBtn = document.getElementById('trip-form-daterange');
+    const start = rangeBtn.dataset.start || '';
+    const end = rangeBtn.dataset.end || '';
+    if(!title || !start || !end){ alert(t('alertTripRequired')); return; }
+    let id, tr;
+    if(editingTripId){
+      id = editingTripId;
+      tr = trips.find(x => x.id === id);
+      tr.title = title; tr.destination = destination; tr.start = start; tr.end = end; tr.icon = selectedTripIcon;
+    } else {
+      id = uid();
+      tr = { id, title, destination, start, end, icon: selectedTripIcon, hasCover: false };
+      trips.push(tr);
+      tripDataCache[id] = { items: [], candidates: [], checklist: [], notes: [], memories: [] };
+      await saveTripData(id);
+    }
+    if(pendingCoverPhoto){
+      try{ await window.storage.set('cover:'+id, pendingCoverPhoto, true); tr.hasCover = true; coverCache[id] = pendingCoverPhoto; }
+      catch(e){ alert(t('alertCoverFailed')); }
+    } else if(removeCoverFlag){
+      try{ await window.storage.delete('cover:'+id, true); }catch(e){}
+      tr.hasCover = false; delete coverCache[id];
+    }
+    await saveTrips();
+    closeModal('trip-modal');
+    await renderHome();
+    showToast(t('saved'));
+  }
+  async function deleteTrip(){
+    if(!editingTripId) return;
+    if(!confirm(t('confirmDeleteTrip'))) return;
+    const id = editingTripId;
+    const data = await loadTripData(id);
+    trips = trips.filter(x => x.id !== id);
+    await saveTrips();
+    try{ await window.storage.delete('trip:'+id, true); }catch(e){}
+    try{ await window.storage.delete('cover:'+id, true); }catch(e){}
+    for(const it of data.items){ if(it.hasAttachment) await deleteAttachmentStorage(it.id); }
+    delete tripDataCache[id];
+    delete coverCache[id];
+    closeModal('trip-modal');
+    await renderHome();
+    showToast(t('deleted'));
+  }
+
+  /* ---------- Trip detail ---------- */
+  async function renderTripDetail(){
+    const trip = trips.find(x => x.id === currentTripId);
+    if(!trip){ await goHome(); return; }
+    if(trip.hasCover && !coverCache[trip.id]) await fetchCover(trip.id);
+    const hero = document.getElementById('detail-hero');
+    const photo = coverCache[trip.id];
+    const fallbackEl = document.getElementById('hero-fallback-icon');
+    if(photo){ hero.style.backgroundImage = `url('${photo}')`; fallbackEl.style.display = 'none'; }
+    else { hero.style.backgroundImage = 'none'; hero.style.background = gradientFor(trip.id); fallbackEl.style.display = 'flex'; fallbackEl.textContent = trip.icon; }
+    document.getElementById('trip-detail-title').textContent = trip.title;
+    document.getElementById('trip-detail-location').textContent = trip.destination ? `📍 ${trip.destination}` : '';
+    const days = Math.floor((new Date(trip.end+'T00:00:00') - new Date(trip.start+'T00:00:00')) / 86400000) + 1;
+    document.getElementById('trip-detail-dates').textContent = `📅 ${formatDateRange(trip.start, trip.end)}（${days}）`;
+    await loadTripData(currentTripId);
+    renderTabContent();
+  }
+  function renderTabContent(){
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === currentTab));
+    if(currentTab === 'items') renderItemsTab();
+    else if(currentTab === 'spots') renderSpotsTab();
+    else if(currentTab === 'costs') renderCostsTab();
+    else if(currentTab === 'prep') renderPrepTab();
+    else if(currentTab === 'memories') renderMemoriesTab();
+  }
+
+  /* ---------- Items (itinerary) tab ---------- */
+  function selectDay(d){ selectedDay = d; renderItemsTab(); }
+  function renderItemsTab(){
+    const trip = trips.find(x => x.id === currentTripId);
+    const data = tripDataCache[currentTripId];
+    const days = buildDayList(trip);
+    if(!selectedDay || !days.includes(selectedDay)) selectedDay = days[0];
+    const dayItems = data.items.filter(it => it.date === selectedDay).slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
+    let html = `
+      <div class="day-pills-scroll"><div class="day-pills">
+        ${days.map(d => {
+          const { wd, day } = dayPillLabel(d);
+          return `<button type="button" class="day-pill ${d===selectedDay?'active':''}" onclick="selectDay('${d}')"><span class="day-pill-wd">${wd}</span><span class="day-pill-num">${day}</span></button>`;
+        }).join('')}
+      </div></div>
+      <div class="tab-toolbar-single" style="margin-top:16px;">
+        <button class="btn-outline" onclick="openItemModal(null, '${selectedDay}')">${t('addItem')}</button>
+      </div>
+    `;
+    if(dayItems.length === 0){ html += `<div class="empty-state">${t('itemEmptyDay')}</div>`; }
+    else { html += dayItems.map(it => renderTimelineRow(it)).join(''); }
+    document.getElementById('tab-content').innerHTML = html;
+  }
+  function renderTimelineRow(it){
+    const info = typeInfo(it.type);
+    return `
+      <div class="tl-row">
+        <div class="tl-time">${it.startTime || ''}</div>
+        <div class="tl-line-wrap"><div class="tl-dot" style="background:${info.color}"></div><div class="tl-line"></div></div>
+        <div class="tl-card" onclick="openItemDetail('${it.id}')">
+          <div class="tl-card-head">
+            <div class="tl-icon" style="background:${info.color}">${info.icon}</div>
+            <div class="tl-title">${escapeHtml(it.title)}</div>
+            ${it.endTime ? `<div class="tl-endtime">~${it.endTime}</div>` : ''}
+          </div>
+          ${it.place ? `<div class="tl-place">📍 ${escapeHtml(it.place)}</div>` : ''}
+          ${Number(it.cost) > 0 ? `<div class="tl-cost">${formatYen(it.cost)}${it.paid ? '' : t('unpaidSuffix')}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+  async function openAttachment(itemId){
+    try{
+      const res = await window.storage.get('attachment:'+itemId, true);
+      if(!res || !res.value){ alert(t('alertAttachmentNotFound')); return; }
+      const data = JSON.parse(res.value);
+      const w = window.open();
+      if(w){ w.location = data.dataUrl; } else { alert(t('alertPopupBlocked')); }
+    }catch(e){ alert(t('alertFileFailed')); }
+  }
+
+  /* ---------- Item detail screen ---------- */
+  function openItemDetail(id){
+    currentDetailItemId = id;
+    document.getElementById('screen-trip').classList.add('hidden');
+    document.getElementById('screen-item-detail').classList.remove('hidden');
+    renderItemDetail(tripDataCache[currentTripId].items.find(i => i.id === id));
+  }
+  function closeItemDetail(){
+    document.getElementById('screen-item-detail').classList.add('hidden');
+    document.getElementById('screen-trip').classList.remove('hidden');
+    currentDetailItemId = null;
+    renderTabContent();
+  }
+  function renderItemDetail(it){
+    if(!it){ closeItemDetail(); return; }
+    const info = typeInfo(it.type);
+    document.getElementById('item-detail-topbar-title').textContent = it.title;
+    const mapUrl = it.place ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(it.place)}` : null;
+    let rows = '';
+    rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailDate')}</span><span class="detail-row-value">${formatDateJP(it.date)}</span></div>`;
+    if(it.startTime || it.endTime){
+      rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailTime')}</span><span class="detail-row-value">${it.startTime||''}${it.endTime?(' 〜 '+it.endTime):''}</span></div>`;
+    }
+    if(it.place){
+      rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailAddress')}</span><span class="detail-row-value"><a class="map-link" href="${mapUrl}" target="_blank" rel="noopener">📍 ${escapeHtml(it.place)}</a></span></div>`;
+    }
+    if(it.contact) rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailContact')}</span><span class="detail-row-value">${escapeHtml(it.contact)}</span></div>`;
+    if(it.checkIn) rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailCheckIn')}</span><span class="detail-row-value">${escapeHtml(it.checkIn)}</span></div>`;
+    if(it.checkOut) rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailCheckOut')}</span><span class="detail-row-value">${escapeHtml(it.checkOut)}</span></div>`;
+    if(it.url) rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailUrl')}</span><span class="detail-row-value"><a class="map-link" href="${escapeHtml(normalizeUrl(it.url))}" target="_blank" rel="noopener">${escapeHtml(it.url)}</a></span></div>`;
+    if(Number(it.cost) > 0){ rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailCost')}</span><span class="detail-row-value">${formatYen(it.cost)}${it.paid?t('paidSuffix'):t('unpaidSuffix')}</span></div>`; }
+    if(it.memo) rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailMemo')}</span><span class="detail-row-value">${escapeHtml(it.memo)}</span></div>`;
+    if(it.hasAttachment) rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailAttachment')}</span><span class="detail-row-value"><button type="button" class="attach-link" onclick="openAttachment('${it.id}')">📎 ${escapeHtml(it.attachmentName||'')}</button></span></div>`;
+    let html = `
+      <div class="detail-icon-card">
+        <div class="detail-icon-square" style="background:${info.color}">${info.icon}</div>
+        <div>
+          <div class="detail-icon-title heavy">${escapeHtml(it.title)}</div>
+          <div class="detail-icon-type" style="color:${info.color}">${info.label[LANG]}</div>
+        </div>
+      </div>
+      <div class="detail-info-card">${rows}</div>
+    `;
+    if(it.place){
+      html += `<div class="detail-map-wrap"><iframe class="map-embed" src="https://www.google.com/maps?q=${encodeURIComponent(it.place)}&output=embed" loading="lazy"></iframe><a class="map-open-link" href="${mapUrl}" target="_blank" rel="noopener">${t('mapOpen')}</a></div>`;
+    }
+    document.getElementById('item-detail-content').innerHTML = html;
+  }
+  function editCurrentDetailItem(){
+    const it = tripDataCache[currentTripId].items.find(i => i.id === currentDetailItemId);
+    openItemModal(it);
+  }
+  function deleteCurrentDetailItem(){
+    editingItemId = currentDetailItemId;
+    deleteItem();
+  }
+
+  /* ---------- Item modal ---------- */
+  function openItemModal(item, defaultDate){
+    editingItemId = (item && item.id) ? item.id : null;
+    pendingAttachment = null;
+    removeAttachmentFlag = false;
+    existingAttachmentMeta = (item && item.hasAttachment) ? { name: item.attachmentName, type: item.attachmentType } : null;
+    document.getElementById('item-form-file').value = '';
+    document.getElementById('item-modal-title').textContent = editingItemId ? t('editItem') : t('newItem');
+    document.getElementById('item-form-title').value = item ? (item.title || '') : '';
+    setDateField('item-form-date', (item && item.date) ? item.date : (defaultDate || ''));
+    document.getElementById('item-form-start-time').value = item ? (item.startTime || '') : '';
+    document.getElementById('item-form-end-time').value = item ? (item.endTime || '') : '';
+    document.getElementById('item-form-place').value = item ? (item.place || '') : '';
+    document.getElementById('item-form-contact').value = item ? (item.contact || '') : '';
+    document.getElementById('item-form-checkin').value = item ? (item.checkIn || '') : '';
+    document.getElementById('item-form-checkout').value = item ? (item.checkOut || '') : '';
+    document.getElementById('item-form-url').value = item ? (item.url || '') : '';
+    document.getElementById('item-form-cost').value = item && item.cost ? item.cost : '';
+    document.getElementById('item-form-paid').checked = item ? !!item.paid : false;
+    document.getElementById('item-form-memo').value = item ? (item.memo || '') : '';
+    selectedItemType = item ? (item.type || 'other') : 'other';
+    renderTypeChips('item-type-picker', selectedItemType, ty => { selectedItemType = ty; });
+    document.getElementById('item-delete-btn').style.display = editingItemId ? 'block' : 'none';
+    renderAttachmentPreview();
+    openModal('item-modal');
+  }
+  function renderAttachmentPreview(){
+    const el = document.getElementById('attachment-preview');
+    if(pendingAttachment){
+      el.innerHTML = `<div class="attachment-chip"><span class="attachment-name">📎 ${escapeHtml(pendingAttachment.name)}</span><button type="button" class="delete-btn" onclick="clearPendingAttachment()">×</button></div>`;
+    } else if(existingAttachmentMeta && !removeAttachmentFlag){
+      el.innerHTML = `<div class="attachment-chip"><span class="attachment-name">📎 ${escapeHtml(existingAttachmentMeta.name)}</span><button type="button" class="btn-outline small" onclick="openAttachment('${editingItemId}')">${t('open')}</button><button type="button" class="delete-btn" onclick="markRemoveAttachment()">×</button></div>`;
+    } else {
+      el.innerHTML = `<div class="attachment-empty">${t('attachmentEmpty')}</div>`;
+    }
+  }
+  function handleAttachmentFile(input){
+    const file = input.files[0];
+    if(!file) return;
+    if(file.size > MAX_ATTACHMENT_BYTES){ alert(t('alertFileTooBig')); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingAttachment = { name: file.name, type: file.type, dataUrl: reader.result };
+      removeAttachmentFlag = false;
+      renderAttachmentPreview();
+    };
+    reader.onerror = () => { alert(t('alertFileFailed')); };
+    reader.readAsDataURL(file);
+  }
+  function clearPendingAttachment(){ pendingAttachment = null; document.getElementById('item-form-file').value = ''; renderAttachmentPreview(); }
+  function markRemoveAttachment(){ removeAttachmentFlag = true; renderAttachmentPreview(); }
+  async function saveItemForm(){
+    const title = val('item-form-title').trim();
+    const date = getDateField('item-form-date');
+    if(!title || !date){ alert(t('alertItemRequired')); return; }
+    const startTime = val('item-form-start-time');
+    const endTime = val('item-form-end-time');
+    const place = val('item-form-place').trim();
+    const contact = val('item-form-contact').trim();
+    const checkIn = val('item-form-checkin').trim();
+    const checkOut = val('item-form-checkout').trim();
+    const url = val('item-form-url').trim();
+    const cost = Number(val('item-form-cost')) || 0;
+    const paid = document.getElementById('item-form-paid').checked;
+    const memo = val('item-form-memo').trim();
+    const data = tripDataCache[currentTripId];
+    let item, itemId;
+    if(editingItemId){
+      item = data.items.find(i => i.id === editingItemId);
+      itemId = editingItemId;
+      Object.assign(item, { title, type: selectedItemType, date, startTime, endTime, place, contact, checkIn, checkOut, url, cost, paid, memo });
+    } else {
+      itemId = uid();
+      item = { id: itemId, title, type: selectedItemType, date, startTime, endTime, place, contact, checkIn, checkOut, url, cost, paid, memo, hasAttachment: false };
+      data.items.push(item);
+    }
+    if(pendingAttachment){
+      try{
+        await window.storage.set('attachment:'+itemId, JSON.stringify(pendingAttachment), true);
+        item.hasAttachment = true; item.attachmentName = pendingAttachment.name; item.attachmentType = pendingAttachment.type;
+      }catch(e){ alert(t('alertAttachmentFailed')); }
+    } else if(removeAttachmentFlag){
+      await deleteAttachmentStorage(itemId);
+      item.hasAttachment = false; delete item.attachmentName; delete item.attachmentType;
+    }
+    let cameFromCandidate = false;
+    if(promotingFromCandidateId){
+      data.candidates = data.candidates.filter(c => c.id !== promotingFromCandidateId);
+      cameFromCandidate = true;
+    }
+    await saveTripData(currentTripId);
+    closeModal('item-modal');
+    if(!document.getElementById('screen-item-detail').classList.contains('hidden') && currentDetailItemId === itemId){
+      renderItemDetail(item);
+    } else {
+      renderTabContent();
+    }
+    if(cameFromCandidate && currentTab === 'spots') renderSpotsTab();
+    showToast(t('saved'));
+  }
+  async function deleteItem(){
+    if(!editingItemId) return;
+    if(!confirm(t('confirmDeleteItem'))) return;
+    const data = tripDataCache[currentTripId];
+    const it = data.items.find(i => i.id === editingItemId);
+    const wasDetailOpen = !document.getElementById('screen-item-detail').classList.contains('hidden') && currentDetailItemId === editingItemId;
+    data.items = data.items.filter(i => i.id !== editingItemId);
+    await saveTripData(currentTripId);
+    if(it && it.hasAttachment) await deleteAttachmentStorage(it.id);
+    closeModal('item-modal');
+    if(wasDetailOpen){ closeItemDetail(); } else { renderTabContent(); }
+    showToast(t('deleted'));
+  }
+
+  /* ---------- Spots tab ---------- */
+  function openSpotsMap(){
+    const data = tripDataCache[currentTripId];
+    const scheduledPlaces = data.items.filter(it => it.place).slice().sort((a,b) => sortKey(a).localeCompare(sortKey(b))).map(it => it.place);
+    const candidatePlaces = data.candidates.filter(c => c.place).map(c => c.place);
+    const places = scheduledPlaces.concat(candidatePlaces);
+    if(places.length === 0){ alert(t('alertNoMapPlaces')); return; }
+    window.open('https://www.google.com/maps/dir/' + places.map(p => encodeURIComponent(p)).join('/'), '_blank');
+  }
+  function renderSpotsTab(){
+    const trip = trips.find(x => x.id === currentTripId);
+    const data = tripDataCache[currentTripId];
+    const scheduled = data.items.filter(it => it.place).slice().sort((a,b) => sortKey(a).localeCompare(sortKey(b)));
+    let html = `<button type="button" class="btn-outline full" onclick="openSpotsMap()">${t('mapShow')}</button>`;
+    html += `<div class="spot-section-title" style="margin-top:22px;">${t('scheduledSpots')} <span class="spot-count">${scheduled.length}</span></div>`;
+    if(scheduled.length === 0){ html += `<div class="empty-state">${t('noScheduledSpots')}</div>`; }
+    else {
+      html += scheduled.map(it => {
+        const info = typeInfo(it.type);
+        const dayIndex = Math.floor((new Date(it.date+'T00:00:00') - new Date(trip.start+'T00:00:00')) / 86400000) + 1;
+        return `
+          <div class="spot-card" onclick="openItemDetail('${it.id}')">
+            <div class="spot-icon" style="background:${info.color}">${info.icon}</div>
+            <div class="spot-body">
+              <div class="spot-title">${escapeHtml(it.title)}</div>
+              <div class="spot-address">${escapeHtml(it.place)}</div>
+              <div class="spot-tag">${t('dayOf', dayIndex)} ${it.startTime||''}</div>
+            </div>
+            <div class="spot-chevron">›</div>
+          </div>
+        `;
+      }).join('');
+    }
+    html += `<div class="spot-section-title" style="margin-top:28px;">${t('candidateSpots')} <span class="spot-count">${data.candidates.length}</span></div>`;
+    if(data.candidates.length === 0){ html += `<div class="empty-state">${t('noCandidateSpots')}</div>`; }
+    else {
+      html += data.candidates.map(c => {
+        const info = typeInfo(c.type);
+        return `
+          <div class="spot-card" onclick="promoteCandidate('${c.id}')">
+            <div class="spot-icon" style="background:${info.color}">${info.icon}</div>
+            <div class="spot-body">
+              <div class="spot-title">${escapeHtml(c.title)}</div>
+              ${c.place ? `<div class="spot-address">${escapeHtml(c.place)}</div>` : ''}
+            </div>
+            <button type="button" class="spot-remove" onclick="event.stopPropagation(); deleteCandidateDirect('${c.id}')">×</button>
+          </div>
+        `;
+      }).join('');
+    }
+    html += `<button type="button" class="btn-outline full" style="margin-top:16px;" onclick="openCandidateModal(null)">${t('addCandidate')}</button>`;
+    document.getElementById('tab-content').innerHTML = html;
+  }
+  function promoteCandidate(id){
+    const c = tripDataCache[currentTripId].candidates.find(x => x.id === id);
+    openItemModal({ title: c.title, type: c.type, place: c.place, contact: c.contact, checkIn: c.checkIn, checkOut: c.checkOut, url: c.url });
+    promotingFromCandidateId = id;
+  }
+  async function deleteCandidateDirect(id){
+    if(!confirm(t('confirmDeleteCandidate'))) return;
+    const data = tripDataCache[currentTripId];
+    data.candidates = data.candidates.filter(c => c.id !== id);
+    await saveTripData(currentTripId);
+    renderSpotsTab();
+  }
+  function openCandidateModal(candidate){
+    editingCandidateId = candidate ? candidate.id : null;
+    document.getElementById('candidate-modal-title').textContent = candidate ? t('editCandidate') : t('newCandidate');
+    document.getElementById('candidate-form-title').value = candidate ? candidate.title : '';
+    document.getElementById('candidate-form-place').value = candidate ? (candidate.place || '') : '';
+    document.getElementById('candidate-form-contact').value = candidate ? (candidate.contact || '') : '';
+    document.getElementById('candidate-form-checkin').value = candidate ? (candidate.checkIn || '') : '';
+    document.getElementById('candidate-form-checkout').value = candidate ? (candidate.checkOut || '') : '';
+    document.getElementById('candidate-form-url').value = candidate ? (candidate.url || '') : '';
+    selectedCandidateType = candidate ? (candidate.type || 'other') : 'other';
+    renderTypeChips('candidate-type-picker', selectedCandidateType, ty => { selectedCandidateType = ty; });
+    document.getElementById('candidate-delete-btn').style.display = candidate ? 'block' : 'none';
+    openModal('candidate-modal');
+  }
+  async function saveCandidateForm(){
+    const title = val('candidate-form-title').trim();
+    if(!title){ alert(t('alertCandidateRequired')); return; }
+    const place = val('candidate-form-place').trim();
+    const contact = val('candidate-form-contact').trim();
+    const checkIn = val('candidate-form-checkin').trim();
+    const checkOut = val('candidate-form-checkout').trim();
+    const url = val('candidate-form-url').trim();
+    const data = tripDataCache[currentTripId];
+    if(editingCandidateId){
+      const c = data.candidates.find(c => c.id === editingCandidateId);
+      Object.assign(c, { title, place, contact, checkIn, checkOut, url, type: selectedCandidateType });
+    } else {
+      data.candidates.push({ id: uid(), title, place, contact, checkIn, checkOut, url, type: selectedCandidateType });
+    }
+    await saveTripData(currentTripId);
+    closeModal('candidate-modal');
+    renderSpotsTab();
+    showToast(t('saved'));
+  }
+  async function deleteCandidate(){
+    if(!editingCandidateId) return;
+    if(!confirm(t('confirmDeleteCandidate'))) return;
+    const data = tripDataCache[currentTripId];
+    data.candidates = data.candidates.filter(c => c.id !== editingCandidateId);
+    await saveTripData(currentTripId);
+    closeModal('candidate-modal');
+    renderSpotsTab();
+    showToast(t('deleted'));
+  }
+
+  /* ---------- Costs tab ---------- */
+  function renderCostsTab(){
+    const data = tripDataCache[currentTripId];
+    const stats = computeCostStats(data.items);
+    let html = `
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-value">${formatYen(stats.total)}</div><div class="stat-label">${t('total')}</div></div>
+        <div class="stat-box"><div class="stat-value">${formatYen(stats.paid)}</div><div class="stat-label">${t('paidStat')}</div></div>
+        <div class="stat-box"><div class="stat-value">${formatYen(stats.unpaid)}</div><div class="stat-label">${t('unpaid')}</div></div>
+      </div>`;
+    if(stats.items.length === 0){ html += `<div class="empty-state">${t('noCosts')}</div>`; }
+    else {
+      const sorted = stats.items.slice().sort((a,b) => sortKey(a).localeCompare(sortKey(b)));
+      html += sorted.map(it => `
+        <div class="item-row">
+          <div class="paid-checkbox ${it.paid?'checked':''}" onclick="toggleItemPaid('${it.id}')">${it.paid?'✓':''}</div>
+          <div class="item-body" onclick="openItemDetail('${it.id}')">
+            <div class="item-title">${escapeHtml(it.title)}</div>
+            <div class="item-meta">${formatDateJP(it.date)}</div>
+          </div>
+          <div class="item-cost ${it.paid?'':'unpaid'}" data-unpaid-label="${t('unpaidTag')}" onclick="openItemDetail('${it.id}')">${formatYen(it.cost)}</div>
+        </div>
+      `).join('');
+    }
+    document.getElementById('tab-content').innerHTML = html;
+  }
+  async function toggleItemPaid(itemId){
+    const it = tripDataCache[currentTripId].items.find(i => i.id === itemId);
+    it.paid = !it.paid;
+    await saveTripData(currentTripId);
+    renderCostsTab();
+  }
+
+  /* ---------- Prep tab ---------- */
+  function setPrepSubTab(tb){ prepSubTab = tb; renderPrepTab(); }
+  function renderPrepTab(){
+    const data = tripDataCache[currentTripId];
+    const inner = prepSubTab === 'checklist' ? buildChecklistHtml(data) : buildNotesHtml(data);
+    document.getElementById('tab-content').innerHTML = `
+      <div class="sub-tab-pills">
+        <button type="button" class="sub-tab-btn ${prepSubTab==='checklist'?'active':''}" onclick="setPrepSubTab('checklist')">${t('checklistTab')}</button>
+        <button type="button" class="sub-tab-btn ${prepSubTab==='notes'?'active':''}" onclick="setPrepSubTab('notes')">${t('notesTab')}</button>
+      </div>
+      ${inner}
+    `;
+  }
+  function buildChecklistHtml(data){
+    const total = data.checklist.length;
+    const checked = data.checklist.filter(c => c.checked).length;
+    const pct = total ? Math.round(checked / total * 100) : 0;
+    const otherLabel = LANG === 'en' ? 'Other' : 'その他';
+    const categories = [...new Set(data.checklist.map(c => c.category || otherLabel))];
+    let html = `
+      <div class="checklist-add-row">
+        <input type="text" id="checklist-category-input" placeholder="${t('categoryPlaceholder')}" list="category-list">
+        <datalist id="category-list">${categories.map(c => `<option value="${escapeHtml(c)}">`).join('')}</datalist>
+        <input type="text" id="checklist-input" placeholder="${t('checklistItemPlaceholder')}" onkeydown="if(event.key==='Enter') addChecklistItem()">
+        <button type="button" class="btn-outline" onclick="addChecklistItem()">＋</button>
+      </div>
+      <div class="progress-row"><span>${checked} / ${total}</span><span>${pct}%</span></div>
+      <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    `;
+    if(data.checklist.length === 0){ html += `<div class="empty-state">${t('checklistEmpty')}</div>`; }
+    else {
+      html += groupChecklistByLabel(data.checklist, otherLabel).map(g => `
+        <div class="checklist-group">
+          <div class="checklist-group-title">${escapeHtml(g.cat)}</div>
+          ${g.items.map(c => `
+            <div class="checklist-row">
+              <div class="sq-checkbox ${c.checked?'checked':''}" onclick="toggleChecklistItem('${c.id}')">${c.checked?'✓':''}</div>
+              <div class="checklist-text ${c.checked?'done':''}">${escapeHtml(c.text)}</div>
+              <button type="button" class="delete-btn" onclick="deleteChecklistItem('${c.id}')">×</button>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+    return html;
+  }
+  function groupChecklistByLabel(items, otherLabel){
+    const order = []; const map = {};
+    items.forEach(it => {
+      const cat = it.category || otherLabel;
+      if(!map[cat]){ map[cat] = []; order.push(cat); }
+      map[cat].push(it);
+    });
+    return order.map(cat => ({ cat, items: map[cat] }));
+  }
+  async function addChecklistItem(){
+    const input = document.getElementById('checklist-input');
+    const catInput = document.getElementById('checklist-category-input');
+    const text = input.value.trim();
+    if(!text) return;
+    const otherLabel = LANG === 'en' ? 'Other' : 'その他';
+    const category = catInput.value.trim() || otherLabel;
+    tripDataCache[currentTripId].checklist.push({ id: uid(), text, checked: false, category });
+    input.value = '';
+    await saveTripData(currentTripId);
+    renderPrepTab();
+    const refocus = document.getElementById('checklist-input');
+    if(refocus) refocus.focus();
+  }
+  async function toggleChecklistItem(id){
+    const item = tripDataCache[currentTripId].checklist.find(c => c.id === id);
+    item.checked = !item.checked;
+    await saveTripData(currentTripId);
+    renderPrepTab();
+  }
+  async function deleteChecklistItem(id){
+    const data = tripDataCache[currentTripId];
+    data.checklist = data.checklist.filter(c => c.id !== id);
+    await saveTripData(currentTripId);
+    renderPrepTab();
+  }
+  function buildNotesHtml(data){
+    let html = `<div class="tab-toolbar-single"><button type="button" class="btn-outline" onclick="openNoteModal(null)">${t('addNote')}</button></div>`;
+    if(data.notes.length === 0){ html += `<div class="empty-state">${t('notesEmpty')}</div>`; }
+    else {
+      const sorted = data.notes.slice().sort((a,b) => b.createdAt - a.createdAt);
+      html += sorted.map(n => `
+        <div class="note-card" onclick="editNoteById('${n.id}')">
+          <div class="note-text">${escapeHtml(n.text)}</div>
+          <div class="note-date">${formatDateTime(n.createdAt)}</div>
+        </div>
+      `).join('');
+    }
+    return html;
+  }
+  function editNoteById(id){ openNoteModal(tripDataCache[currentTripId].notes.find(n => n.id === id)); }
+  function openNoteModal(note){
+    editingNoteId = note ? note.id : null;
+    document.getElementById('note-modal-title').textContent = note ? t('editNote') : t('newNote');
+    document.getElementById('note-form-text').value = note ? note.text : '';
+    document.getElementById('note-delete-btn').style.display = note ? 'block' : 'none';
+    openModal('note-modal');
+  }
+  async function saveNoteForm(){
+    const text = val('note-form-text').trim();
+    if(!text) return;
+    const data = tripDataCache[currentTripId];
+    if(editingNoteId){ data.notes.find(n => n.id === editingNoteId).text = text; }
+    else { data.notes.push({ id: uid(), text, createdAt: Date.now() }); }
+    await saveTripData(currentTripId);
+    closeModal('note-modal');
+    renderPrepTab();
+    showToast(t('saved'));
+  }
+  async function deleteNote(){
+    if(!editingNoteId) return;
+    if(!confirm(t('confirmDeleteNote'))) return;
+    const data = tripDataCache[currentTripId];
+    data.notes = data.notes.filter(n => n.id !== editingNoteId);
+    await saveTripData(currentTripId);
+    closeModal('note-modal');
+    renderPrepTab();
+    showToast(t('deleted'));
+  }
+
+  /* ---------- Memories tab ---------- */
+  function renderMemoriesTab(){
+    const data = tripDataCache[currentTripId];
+    let html = `<div class="tab-toolbar-single"><button type="button" class="btn-outline" onclick="openMemoryModal(null)">${t('addMemory')}</button></div>`;
+    if(data.memories.length === 0){ html += `<div class="empty-state">${t('memoriesEmpty')}</div>`; }
+    else {
+      const sorted = data.memories.slice().sort((a,b) => b.createdAt - a.createdAt);
+      html += sorted.map(m => `
+        <div class="memory-card" onclick="editMemoryById('${m.id}')">
+          ${m.photo ? `<img class="memory-photo" src="${m.photo}">` : ''}
+          ${m.text ? `<div class="memory-text">${escapeHtml(m.text)}</div>` : ''}
+          <div class="note-date">${formatDateTime(m.createdAt)}</div>
+        </div>
+      `).join('');
+    }
+    document.getElementById('tab-content').innerHTML = html;
+  }
+  function editMemoryById(id){ openMemoryModal(tripDataCache[currentTripId].memories.find(m => m.id === id)); }
+  function openMemoryModal(memory){
+    editingMemoryId = memory ? memory.id : null;
+    pendingMemoryPhoto = memory ? (memory.photo || null) : null;
+    document.getElementById('memory-form-file').value = '';
+    document.getElementById('memory-modal-title').textContent = memory ? t('editMemory') : t('newMemory');
+    document.getElementById('memory-form-text').value = memory ? (memory.text || '') : '';
+    document.getElementById('memory-delete-btn').style.display = memory ? 'block' : 'none';
+    renderMemoryPhotoPreview();
+    openModal('memory-modal');
+  }
+  function renderMemoryPhotoPreview(){
+    const el = document.getElementById('memory-photo-preview');
+    el.innerHTML = pendingMemoryPhoto ? `<div class="cover-preview-wrap"><img src="${pendingMemoryPhoto}"><button type="button" class="delete-btn cover-remove-btn" onclick="removeMemoryPhoto()">×</button></div>` : '';
+  }
+  async function handleMemoryFile(input){
+    const file = input.files[0];
+    if(!file) return;
+    try{ pendingMemoryPhoto = await compressImage(file, 800, 0.6); renderMemoryPhotoPreview(); }
+    catch(e){ alert(t('alertImageFailed')); }
+  }
+  function removeMemoryPhoto(){ pendingMemoryPhoto = null; document.getElementById('memory-form-file').value = ''; renderMemoryPhotoPreview(); }
+  async function saveMemoryForm(){
+    const text = val('memory-form-text').trim();
+    if(!text && !pendingMemoryPhoto){ alert(t('alertMemoryRequired')); return; }
+    const data = tripDataCache[currentTripId];
+    if(editingMemoryId){ const m = data.memories.find(m => m.id === editingMemoryId); m.text = text; m.photo = pendingMemoryPhoto; }
+    else { data.memories.push({ id: uid(), text, photo: pendingMemoryPhoto, createdAt: Date.now() }); }
+    await saveTripData(currentTripId);
+    closeModal('memory-modal');
+    renderMemoriesTab();
+    showToast(t('saved'));
+  }
+  async function deleteMemory(){
+    if(!editingMemoryId) return;
+    if(!confirm(t('confirmDeleteMemory'))) return;
+    const data = tripDataCache[currentTripId];
+    data.memories = data.memories.filter(m => m.id !== editingMemoryId);
+    await saveTripData(currentTripId);
+    closeModal('memory-modal');
+    renderMemoriesTab();
+    showToast(t('deleted'));
+  }
+
+  /* ---------- Init ---------- */
+  function setupListeners(){
+    document.getElementById('back-btn').addEventListener('click', () => { goHome(); });
+    document.getElementById('edit-trip-btn').addEventListener('click', () => openTripModal(trips.find(x => x.id === currentTripId)));
+    document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => { currentTab = btn.dataset.tab; renderTabContent(); }); });
+    document.getElementById('item-detail-back').addEventListener('click', closeItemDetail);
+    document.getElementById('item-detail-edit').addEventListener('click', editCurrentDetailItem);
+    document.getElementById('item-detail-delete').addEventListener('click', deleteCurrentDetailItem);
+    document.getElementById('trip-form-cancel').addEventListener('click', () => closeModal('trip-modal'));
+    document.getElementById('trip-form-save').addEventListener('click', saveTripForm);
+    document.getElementById('trip-delete-btn').addEventListener('click', deleteTrip);
+    document.getElementById('item-form-cancel').addEventListener('click', () => closeModal('item-modal'));
+    document.getElementById('item-form-save').addEventListener('click', saveItemForm);
+    document.getElementById('item-delete-btn').addEventListener('click', deleteItem);
+    document.getElementById('candidate-form-cancel').addEventListener('click', () => closeModal('candidate-modal'));
+    document.getElementById('candidate-form-save').addEventListener('click', saveCandidateForm);
+    document.getElementById('candidate-delete-btn').addEventListener('click', deleteCandidate);
+    document.getElementById('note-form-cancel').addEventListener('click', () => closeModal('note-modal'));
+    document.getElementById('note-form-save').addEventListener('click', saveNoteForm);
+    document.getElementById('note-delete-btn').addEventListener('click', deleteNote);
+    document.getElementById('memory-form-cancel').addEventListener('click', () => closeModal('memory-modal'));
+    document.getElementById('memory-form-save').addEventListener('click', saveMemoryForm);
+    document.getElementById('memory-delete-btn').addEventListener('click', deleteMemory);
+    document.querySelectorAll('.modal-overlay').forEach(ov => { ov.addEventListener('click', e => { if(e.target === ov) ov.classList.remove('open'); }); });
+    document.addEventListener('click', (e) => {
+      const popup = document.getElementById('date-picker-popup');
+      if(!popup.classList.contains('open')) return;
+      if(popup.contains(e.target)) return;
+      if(e.target.classList && e.target.classList.contains('date-field')) return;
+      closeDatePicker();
+    });
+    document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeDatePicker(); });
+  }
+  async function init(){
+    applyStaticTranslations();
+    await loadTrips();
+    await renderHome();
+    setupListeners();
+  }
+  // Not auto-started here — trip-note-firebase.html waits for a successful
+  // Firebase sign-in before calling this (see the Firebase module script below).
+  window.appInit = init;
+</script>
+
+<!-- =======================================================================
+     FIREBASE BACKEND — replaces Claude.ai's built-in window.storage with
+     Firebase Authentication + Cloud Firestore, so this file can be hosted
+     anywhere (e.g. GitHub Pages) while still syncing data between exactly
+     the people you register in Firebase Authentication.
+
+     Setup steps: see the accompanying "Firebase + GitHub Pages 公開マニュアル".
+     You only need to edit the firebaseConfig object below — everything
+     else works as-is once your Firebase project is set up.
+     ======================================================================= -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+    setPersistence, browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, deleteDoc
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCkdaawL5pLnVhOS66zRHNrg93nF622RFw",
+  authDomain: "trip-note-ccf03.firebaseapp.com",
+  projectId: "trip-note-ccf03",
+  storageBucket: "trip-note-ccf03.firebasestorage.app",
+  messagingSenderId: "258936823559",
+  appId: "1:258936823559:web:ded162e49f36754940efa2"
+};
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const auth = getAuth(firebaseApp);
+  const db = getFirestore(firebaseApp);
+
+  // All app data lives in one Firestore collection called "storage", one
+  // document per key (e.g. "trips", "trip:abc123", "cover:abc123").
+  // Every document is readable/writable only by the emails allowed in your
+  // Firestore security rules — that's what makes this a private, 2-person app.
+  function docIdFor(key){ return String(key).replace(/\//g, '_'); }
+
+  function installStorageAdapter(){
+    window.storage = {
+      async get(key){
+        const snap = await getDoc(doc(db, 'storage', docIdFor(key)));
+        if(!snap.exists()) throw new Error('not-found');
+        const data = snap.data();
+        return { key, value: data.value, shared: true };
+      },
+      async set(key, value){
+        await setDoc(doc(db, 'storage', docIdFor(key)), { key, value, updatedAt: Date.now() });
+        return { key, value, shared: true };
+      },
+      async delete(key){
+        await deleteDoc(doc(db, 'storage', docIdFor(key)));
+        return { key, deleted: true, shared: true };
+      },
+      async list(prefix){
+        // Not used by this app, kept only so nothing breaks if it's ever called.
+        return { keys: [], prefix: prefix || '', shared: true };
+      }
+    };
+  }
+
+  function setLoginError(msg){ document.getElementById('login-error').textContent = msg; }
+
+  document.getElementById('login-submit').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    setLoginError('');
+    if(!email || !password){ setLoginError('メールアドレスとパスワードを入力してください。'); return; }
+    try{
+      await setPersistence(auth, browserLocalPersistence);
+      await signInWithEmailAndPassword(auth, email, password);
+    }catch(e){
+      setLoginError('ログインできませんでした。メールアドレスとパスワードをご確認ください。');
+    }
+  });
+  document.getElementById('login-password').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') document.getElementById('login-submit').click();
+  });
+  document.getElementById('logout-btn').addEventListener('click', () => { signOut(auth); });
+
+  let appStarted = false;
+  onAuthStateChanged(auth, (user) => {
+    const gate = document.getElementById('login-gate');
+    const appEl = document.querySelector('.app');
+    if(user){
+      gate.classList.add('hidden');
+      if(appEl) appEl.classList.remove('hidden');
+      if(!appStarted){
+        appStarted = true;
+        installStorageAdapter();
+        if(window.appInit) window.appInit();
+      }
+    } else {
+      gate.classList.remove('hidden');
+      if(appEl) appEl.classList.add('hidden');
+    }
+  });
+</script>
+</body>
+</html>
