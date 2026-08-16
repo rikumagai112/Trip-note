@@ -200,8 +200,9 @@
   .checklist-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
   .sq-checkbox{ width:20px; height:20px; border:2px solid var(--text-dim); border-radius:5px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
   .sq-checkbox.checked{ background:var(--accent-green); border-color:var(--accent-green); }
-  .checklist-text{ flex:1; font-size:14px; }
+  .checklist-text{ flex:1; font-size:14px; cursor:pointer; }
   .checklist-text.done{ text-decoration:line-through; color:var(--text-dim); }
+  .checklist-edit-input{ flex:1; font-size:16px; padding:4px 6px; border:1px solid var(--accent-blue); border-radius:6px; background:var(--surface-2); color:var(--text); }
   .delete-btn{ background:none; border:none; color:var(--text-dim); font-size:17px; padding:4px 8px; }
   .delete-btn:hover{ color:var(--text); }
   .note-card{ border-top:2px dashed var(--border); padding:16px 2px; }
@@ -1554,7 +1555,7 @@
           ${g.items.map(c => `
             <div class="checklist-row">
               <div class="sq-checkbox ${c.checked?'checked':''}" onclick="toggleChecklistItem('${c.id}')">${c.checked?'✓':''}</div>
-              <div class="checklist-text ${c.checked?'done':''}">${escapeHtml(c.text)}</div>
+              <div class="checklist-text ${c.checked?'done':''}" data-id="${c.id}" onclick="editChecklistItemInline('${c.id}')">${escapeHtml(c.text)}</div>
               <button type="button" class="delete-btn" onclick="deleteChecklistItem('${c.id}')">×</button>
             </div>
           `).join('')}
@@ -1611,6 +1612,34 @@
     data.checklist = data.checklist.filter(c => c.id !== id);
     await saveTripData(currentTripId);
     renderPrepTab();
+  }
+  function editChecklistItemInline(id){
+    const data = tripDataCache[currentTripId];
+    const item = data.checklist.find(c => c.id === id);
+    if(!item) return;
+    const textEl = document.querySelector(`.checklist-text[data-id="${id}"]`);
+    if(!textEl) return;
+    let cancelled = false;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'checklist-edit-input';
+    input.value = item.text;
+    textEl.replaceWith(input);
+    input.focus();
+    input.select();
+    input.addEventListener('blur', async () => {
+      if(cancelled) return;
+      const newText = input.value.trim();
+      if(newText && newText !== item.text){
+        item.text = newText;
+        await saveTripData(currentTripId);
+      }
+      renderPrepTab();
+    });
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ input.blur(); }
+      else if(e.key === 'Escape'){ cancelled = true; renderPrepTab(); }
+    });
   }
   function buildNotesHtml(data){
     let html = `<div class="tab-toolbar-single"><button type="button" class="btn-outline" onclick="openNoteModal(null)">${t('addNote')}</button></div>`;
