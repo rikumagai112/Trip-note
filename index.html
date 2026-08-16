@@ -1119,6 +1119,27 @@
     else if(currentTab === 'memories') renderMemoriesTab();
   }
 
+  /* ---------- Swipe between tabs ---------- */
+  const TAB_ORDER = ['items', 'spots', 'costs', 'prep', 'memories'];
+  let tabTouchStartX = 0, tabTouchStartY = 0, tabTouchStartedInScroller = false;
+  function onTabContentTouchStart(e){
+    if(!e.touches || !e.touches.length) return;
+    const t = e.touches[0];
+    tabTouchStartX = t.clientX; tabTouchStartY = t.clientY;
+    tabTouchStartedInScroller = !!(e.target.closest && e.target.closest('.day-pills-scroll'));
+  }
+  function onTabContentTouchEnd(e){
+    if(tabTouchStartedInScroller) return;
+    if(!e.changedTouches || !e.changedTouches.length) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - tabTouchStartX;
+    const dy = t.clientY - tabTouchStartY;
+    if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = TAB_ORDER.indexOf(currentTab);
+    if(dx < 0 && idx < TAB_ORDER.length - 1){ currentTab = TAB_ORDER[idx + 1]; renderTabContent(); }
+    else if(dx > 0 && idx > 0){ currentTab = TAB_ORDER[idx - 1]; renderTabContent(); }
+  }
+
   /* ---------- Items (itinerary) tab ---------- */
   function selectDay(d){ selectedDay = d; renderItemsTab(); }
   function renderItemsTab(){
@@ -1701,6 +1722,8 @@
     document.getElementById('back-btn').addEventListener('click', () => { goHome(); });
     document.getElementById('edit-trip-btn').addEventListener('click', () => openTripModal(trips.find(x => x.id === currentTripId)));
     document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => { currentTab = btn.dataset.tab; renderTabContent(); }); });
+    document.getElementById('tab-content').addEventListener('touchstart', onTabContentTouchStart, { passive: true });
+    document.getElementById('tab-content').addEventListener('touchend', onTabContentTouchEnd, { passive: true });
     document.getElementById('item-detail-back').addEventListener('click', closeItemDetail);
     document.getElementById('item-detail-edit').addEventListener('click', editCurrentDetailItem);
     document.getElementById('item-detail-delete').addEventListener('click', deleteCurrentDetailItem);
