@@ -227,6 +227,11 @@
   .modal-panel input[type=file]{ font-size:13px; color:var(--text-dim); padding:8px 6px; }
   .modal-panel textarea{ resize:vertical; min-height:80px; }
   ::placeholder{ color:var(--text-dim); opacity:.75; }
+  /* Absolute safety net: iOS Safari zooms in on focus if the *computed*
+     font-size of the focused field is under 16px. This overrides every
+     input/textarea/select on the page at the moment it's focused, no
+     matter what other rule (or specificity fight) might apply otherwise. */
+  input:focus, textarea:focus, select:focus{ font-size:16px !important; }
   .date-field{ width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); font-size:16px; text-align:left; color:var(--text); }
   .date-field.placeholder{ color:var(--text-dim); }
   .checkbox-label{ display:flex !important; align-items:center; gap:8px; margin-top:16px !important; font-size:13px; color:var(--text); }
