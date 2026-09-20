@@ -876,6 +876,17 @@
     .fab > .ic{ transition:none; }
   }
 
+
+  /* ---------- Home card: keep text clear of the edit button ----------
+     The edit button is absolutely positioned in the card's top-right, so the
+     row underneath it needs to reserve that space or the destination text
+     slides right under it. */
+  .trip-card-row{ padding-right:34px; }
+  .trip-card-body h3{ padding-right:34px; }
+
+  /* Horizontal gestures belong to the tab switcher, never to the page */
+  .tab-content{ overscroll-behavior-x:none; }
+
 </style>
 </head>
 <body>
@@ -2136,7 +2147,7 @@
   const SWIPE_OUT_MS = 170;        // old content leaving
   const SWIPE_IN_MS = 250;         // new content arriving
   let tabTouchStartX = 0, tabTouchStartY = 0;
-  let tabTouchStartedInScroller = false;
+  let tabTouchStartedInScroller = false, tabTouchFromLeftEdge = false;
   let tabDragging = false, tabDragLocked = false, tabAnimating = false;
 
   function reduceMotion(){
@@ -2199,6 +2210,7 @@
     if(tabAnimating || !e.touches || !e.touches.length) return;
     const t = e.touches[0];
     tabTouchStartX = t.clientX; tabTouchStartY = t.clientY;
+    tabTouchFromLeftEdge = t.clientX <= 44;   // where Safari's back gesture lives
     tabTouchStartedInScroller = !!(e.target.closest && e.target.closest('.day-pills-scroll'));
     tabDragging = false; tabDragLocked = false;
     const el = tabEl();
@@ -2212,8 +2224,14 @@
     const dx = t.clientX - tabTouchStartX;
     const dy = t.clientY - tabTouchStartY;
     if(!tabDragging){
-      if(Math.abs(dx) < 12 && Math.abs(dy) < 12) return;   // too small to judge yet
-      if(Math.abs(dx) < Math.abs(dy) * 1.2){ tabDragLocked = true; return; }  // vertical scroll wins
+      /* Claim the gesture as early as we responsibly can. Safari's own
+         edge-swipe-back gesture is decided within the first few pixels, so
+         waiting too long means a rightward swipe navigates the browser back
+         instead of returning to the previous tab. Near the left edge we
+         commit even sooner. */
+      const decideAt = tabTouchFromLeftEdge ? 3 : 5;
+      if(Math.abs(dx) < decideAt && Math.abs(dy) < decideAt) return;
+      if(Math.abs(dx) <= Math.abs(dy)){ tabDragLocked = true; return; }  // vertical scroll wins
       tabDragging = true;
     }
     if(e.cancelable) e.preventDefault();             // the gesture is ours now
@@ -2221,6 +2239,16 @@
     const resist = canGoTab(dir) ? 0.55 : 0.16;      // rubber-band at the ends
     const shift = dx * resist;
     setTabTransform(shift, 1 - Math.min(Math.abs(shift) / 260, 0.55));
+  }
+  /* If the system steals the gesture part-way, slide back rather than
+     leaving the content stranded off-centre. */
+  function onTabContentTouchCancel(){
+    const el = tabEl();
+    tabDragging = false; tabDragLocked = false;
+    if(tabAnimating || !el) return;
+    el.classList.add('tc-anim');
+    setTabTransform(0, 1);
+    setTimeout(() => { el.classList.remove('tc-anim'); clearTabTransform(); }, 240);
   }
 
   function onTabContentTouchEnd(e){
@@ -2891,7 +2919,7 @@
     // page doesn't try to scroll underneath the gesture.
     tc.addEventListener('touchmove', onTabContentTouchMove, { passive: false });
     tc.addEventListener('touchend', onTabContentTouchEnd, { passive: true });
-    tc.addEventListener('touchcancel', onTabContentTouchEnd, { passive: true });
+    tc.addEventListener('touchcancel', onTabContentTouchCancel, { passive: true });
     document.getElementById('item-detail-back').addEventListener('click', closeItemDetail);
     document.getElementById('item-detail-edit').addEventListener('click', editCurrentDetailItem);
     document.getElementById('item-detail-delete').addEventListener('click', deleteCurrentDetailItem);
