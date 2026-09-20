@@ -806,6 +806,76 @@
     .tab-content, .tab-content.tc-anim{ transition:none !important; transform:none !important; opacity:1 !important; }
   }
 
+
+  /* ---------- Sheet stays put (no sideways drift) ---------- */
+  html, body{ overflow-x:hidden; overscroll-behavior-x:none; }
+  .modal-overlay{ touch-action:none; }
+  .modal-panel{
+    overflow-x:hidden;            /* nothing can push the sheet sideways */
+    touch-action:pan-y;           /* vertical scrolling only inside the sheet */
+    overscroll-behavior:contain;  /* don't hand the gesture to the page */
+  }
+  .modal-panel *{ max-width:100%; }
+  .tab-content{ touch-action:pan-y; }
+  /* While a sheet is open the page underneath is frozen in place */
+  body.sheet-open{ position:fixed; width:100%; overflow:hidden; }
+
+  /* ---------- Per-field time zone toggle ---------- */
+  .time-row{ display:flex; gap:10px; align-items:center; }
+  .time-row input[type=time]{ flex:1; min-width:0; }
+  .tz-toggle.mini{
+    flex:0 0 150px; margin-top:0; padding:2px; border-radius:13px;
+  }
+  .tz-toggle.mini button{ padding:7px 6px; font-size:12.5px; border-radius:11px; }
+  @media (max-width:390px){
+    .time-row{ flex-wrap:wrap; }
+    .tz-toggle.mini{ flex:1 1 100%; }
+  }
+  .duration-chip{
+    display:inline-block; font-size:12px; font-weight:600; padding:2px 9px;
+    border-radius:20px; background:rgba(0,122,255,.14); color:var(--blue); margin-left:8px;
+  }
+
+  /* ---------- FAB action menu ---------- */
+  .fab-scrim{
+    position:fixed; inset:0; z-index:65; background:rgba(0,0,0,.28);
+    -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+    opacity:0; transition:opacity .22s ease;
+  }
+  .fab-scrim.show{ opacity:1; }
+  .fab-scrim.hidden{ display:none !important; }
+  .fab-menu{
+    position:fixed; right:22px; z-index:71;
+    bottom:calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 96px);
+    display:flex; flex-direction:column; align-items:flex-end; gap:12px;
+  }
+  .fab-menu.hidden{ display:none !important; }
+  .fab-menu button{
+    display:inline-flex; align-items:center; gap:10px;
+    padding:13px 20px; border:none; border-radius:26px;
+    background:var(--glass-strong);
+    -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    box-shadow:var(--glass-shadow);
+    color:var(--text); font-size:16px; font-weight:600; letter-spacing:-0.3px;
+    white-space:nowrap;
+    opacity:0; transform:translateY(14px) scale(.92);
+    transition:opacity .24s cubic-bezier(.32,.72,0,1), transform .24s cubic-bezier(.32,.72,0,1);
+  }
+  .fab-menu.show button{ opacity:1; transform:translateY(0) scale(1); }
+  /* Each row arrives a beat after the one below it */
+  .fab-menu.show button:nth-last-child(1){ transition-delay:.02s; }
+  .fab-menu.show button:nth-last-child(2){ transition-delay:.06s; }
+  .fab-menu.show button:nth-last-child(3){ transition-delay:.10s; }
+  .fab-menu.show button:nth-last-child(4){ transition-delay:.14s; }
+  .fab-menu.show button:nth-last-child(5){ transition-delay:.18s; }
+  .fab-menu button .ic{ color:var(--blue); }
+  .fab > .ic{ transition:transform .28s cubic-bezier(.32,.72,0,1); }
+  .fab.open > .ic{ transform:rotate(45deg); }
+  @media (prefers-reduced-motion: reduce){
+    .fab-menu button{ opacity:1; transform:none; transition:none; }
+    .fab > .ic{ transition:none; }
+  }
+
 </style>
 </head>
 <body>
@@ -858,6 +928,8 @@
       <button class="tab-btn" data-tab="memories" data-i18n="tabMemories"></button>
     </div>
     <div id="tab-content" class="tab-content"></div>
+    <div id="fab-scrim" class="fab-scrim hidden" onclick="closeFabMenu()"></div>
+    <div id="fab-menu" class="fab-menu hidden"></div>
     <button type="button" id="fab" class="fab" onclick="onFabClick()">
       <svg class="ic" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
     </button>
@@ -911,16 +983,24 @@
     <label data-i18n="dateLabel"></label>
     <button type="button" class="date-field placeholder" id="item-form-date" onclick="openRangeDatePicker('item-form-date')"></button>
     <div class="attachment-hint" data-i18n="dateRangeHint"></div>
-    <label data-i18n="timeZoneLabel"></label>
-    <div class="tz-toggle" id="item-tz-toggle">
-      <button type="button" data-tz="jst" onclick="setItemTzMode('jst')" data-i18n="tzJapan"></button>
-      <button type="button" data-tz="local" onclick="setItemTzMode('local')" data-i18n="tzLocal"></button>
+    <label data-i18n="startTimeLabel"></label>
+    <div class="time-row">
+      <input type="time" id="item-form-start-time" onchange="renderItemDuration()">
+      <div class="tz-toggle mini" id="item-start-tz">
+        <button type="button" data-tz="jst" onclick="setItemTzMode('start','jst')" data-i18n="tzJapan"></button>
+        <button type="button" data-tz="local" onclick="setItemTzMode('start','local')" data-i18n="tzLocal"></button>
+      </div>
     </div>
+    <label data-i18n="endTimeLabel"></label>
+    <div class="time-row">
+      <input type="time" id="item-form-end-time" onchange="renderItemDuration()">
+      <div class="tz-toggle mini" id="item-end-tz">
+        <button type="button" data-tz="jst" onclick="setItemTzMode('end','jst')" data-i18n="tzJapan"></button>
+        <button type="button" data-tz="local" onclick="setItemTzMode('end','local')" data-i18n="tzLocal"></button>
+      </div>
+    </div>
+    <div class="tz-note" id="item-duration-note"></div>
     <div class="tz-note" id="item-tz-note"></div>
-    <div class="form-row-2">
-      <div><label data-i18n="startTimeLabel"></label><input type="time" id="item-form-start-time"></div>
-      <div><label data-i18n="endTimeLabel"></label><input type="time" id="item-form-end-time"></div>
-    </div>
     <label data-i18n="placeLabel"></label>
     <input type="text" id="item-form-place" data-i18n-placeholder="placePlaceholder">
     <label data-i18n="contactLabel"></label>
@@ -1123,9 +1203,13 @@
     if(m === null) return '';
     return minutesToTime(m - fromOffset + toOffset);
   }
-  function itemZoneOffset(it){
-    return (it && it.tzMode === 'jst') ? HOME_TZ : tripTzOffset();
-  }
+  /* Each end of a plan carries its own zone, so an 11/16 14:45 Tokyo
+     departure can land 11/16 07:30 in Los Angeles and still read correctly.
+     Legacy items only stored one zone (tzMode) — it applies to both ends. */
+  function startZoneOf(it){ return (it && (it.startTz || it.tzMode)) || 'local'; }
+  function endZoneOf(it){ return (it && (it.endTz || it.tzMode)) || 'local'; }
+  function offsetOfZone(z){ return z === 'jst' ? HOME_TZ : tripTzOffset(); }
+  function itemZoneOffset(it){ return offsetOfZone(startZoneOf(it)); }
   /* Absolute instant, in minutes since the epoch — what ordering is based on. */
   function absMinutes(it){
     if(!it || !it.date) return 0;
@@ -1140,9 +1224,33 @@
   }
   /* Is this trip in a different zone from home? (controls badge visibility) */
   function tripCrossesZones(){ return tripTzOffset() !== HOME_TZ; }
-  function zoneShortLabel(it){
+  function zoneShortLabel(it, which){
     if(!tripCrossesZones()) return '';
-    return (it.tzMode === 'jst') ? t('tzShortJapan') : t('tzShortLocal');
+    const z = (which === 'end') ? endZoneOf(it) : startZoneOf(it);
+    return (z === 'jst') ? t('tzShortJapan') : t('tzShortLocal');
+  }
+  /* Absolute instant of the finish, using the end date and the end zone. */
+  function absEndMinutes(it){
+    if(!it || !it.endTime) return null;
+    const d = it.endDate || it.date;
+    if(!d) return null;
+    const dayStart = Date.parse(d + 'T00:00:00Z') / 60000;
+    return dayStart + timeToMinutes(it.endTime) - offsetOfZone(endZoneOf(it));
+  }
+  /* Real elapsed time between the two ends, in minutes (null if unknown). */
+  function itemDurationMinutes(it){
+    if(!it || !it.startTime || !it.endTime) return null;
+    const e = absEndMinutes(it);
+    if(e === null) return null;
+    let d = e - absMinutes(it);
+    if(d < 0) d += 1440;          // times only, same day: assume it rolled over
+    return (d >= 0 && d <= 60*24*14) ? d : null;
+  }
+  function formatDuration(mins){
+    if(mins === null || mins === undefined) return '';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    if(LANG === 'en') return (h ? h + 'h ' : '') + (m ? m + 'm' : (h ? '' : '0m'));
+    return (h ? h + '時間' : '') + (m ? m + '分' : (h ? '' : '0分'));
   }
 
   /* ---------- Per-item cover images ---------- */
@@ -1191,13 +1299,16 @@
     renderItemCoverPreview();
   }
 
-  /* ---------- Item time-zone toggle ---------- */
-  let selectedItemTz = 'local';
+  /* ---------- Item time-zone toggles (start and end are independent) ---------- */
+  let selectedStartTz = 'local';
+  let selectedEndTz = 'local';
   function renderItemTzToggle(){
-    const wrap = document.getElementById('item-tz-toggle');
-    if(!wrap) return;
-    wrap.querySelectorAll('button').forEach(b => {
-      b.classList.toggle('active', b.dataset.tz === selectedItemTz);
+    [['item-start-tz', selectedStartTz], ['item-end-tz', selectedEndTz]].forEach(([id, cur]) => {
+      const wrap = document.getElementById(id);
+      if(!wrap) return;
+      wrap.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.dataset.tz === cur);
+      });
     });
     const note = document.getElementById('item-tz-note');
     if(note){
@@ -1205,40 +1316,128 @@
         ? t('tzNote', tzLabel(tripTzOffset()))
         : t('tzNoteSame');
     }
+    renderItemDuration();
   }
-  /* One tap converts the times already typed in, so the same instant is
-     simply shown in the other zone. */
-  function setItemTzMode(mode){
-    if(mode === selectedItemTz) return;
-    const from = selectedItemTz === 'jst' ? HOME_TZ : tripTzOffset();
-    const to   = mode === 'jst' ? HOME_TZ : tripTzOffset();
-    ['item-form-start-time','item-form-end-time'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el && el.value) el.value = shiftTime(el.value, from, to);
-    });
-    selectedItemTz = mode;
+  /* One tap converts the time already typed into that field, so the same
+     instant is simply shown in the other zone. */
+  function setItemTzMode(which, mode){
+    const isEnd = which === 'end';
+    const cur = isEnd ? selectedEndTz : selectedStartTz;
+    if(mode === cur) return;
+    const el = document.getElementById(isEnd ? 'item-form-end-time' : 'item-form-start-time');
+    if(el && el.value) el.value = shiftTime(el.value, offsetOfZone(cur), offsetOfZone(mode));
+    if(isEnd) selectedEndTz = mode; else selectedStartTz = mode;
     renderItemTzToggle();
   }
-
-  /* ---------- Floating action button (contextual per tab) ---------- */
-  const FAB_ACTIONS = {
-    items:    () => openItemModal(null, selectedDay),
-    spots:    () => openCandidateModal(null),
-    prep:     () => { if(prepSubTab === 'notes') openNoteModal(null); },
-    memories: () => openMemoryModal(null)
-  };
-  function onFabClick(){
-    const fn = FAB_ACTIONS[currentTab];
-    if(fn) fn();
+  /* Live "所要時間" readout while the form is open, so a zone mix-up is obvious. */
+  function renderItemDuration(){
+    const out = document.getElementById('item-duration-note');
+    if(!out) return;
+    const dateBtn = document.getElementById('item-form-date');
+    const s = document.getElementById('item-form-start-time');
+    const e = document.getElementById('item-form-end-time');
+    if(!dateBtn || !s || !e || !s.value || !e.value){ out.textContent = ''; return; }
+    const probe = {
+      date: dateBtn.dataset.start || '',
+      endDate: dateBtn.dataset.end || dateBtn.dataset.start || '',
+      startTime: s.value, endTime: e.value,
+      startTz: selectedStartTz, endTz: selectedEndTz
+    };
+    const d = itemDurationMinutes(probe);
+    out.textContent = (d === null) ? '' : t('durationNote', formatDuration(d));
   }
+
+  /* ---------- Floating action button + its menu ---------- */
+  let fabMenuOpen = false;
+
+  function defaultItemDay(){
+    if(selectedDay) return selectedDay;
+    const tr = trips.find(x => x.id === currentTripId);
+    return tr ? tr.start : '';
+  }
+  /* Jump to the right tab first when the action lives on another one. */
+  function gotoTabThen(tab, fn){
+    if(currentTab === tab){ fn(); return; }
+    switchTab(tab);
+    setTimeout(fn, 470);          // after the tab transition settles
+  }
+  function fabAddItem(){
+    closeFabMenu();
+    gotoTabThen('items', () => openItemModal(null, defaultItemDay()));
+  }
+  function fabAddChecklist(){
+    closeFabMenu();
+    const focusInput = () => {
+      const el = document.getElementById('checklist-input');
+      if(el){ el.focus(); el.scrollIntoView({ block:'center', behavior:'smooth' }); }
+    };
+    prepSubTab = 'checklist';
+    if(currentTab === 'prep'){ renderPrepTab(); setTimeout(focusInput, 60); }
+    else gotoTabThen('prep', focusInput);
+  }
+  function fabAddNote(){
+    closeFabMenu();
+    prepSubTab = 'notes';
+    if(currentTab === 'prep'){ renderPrepTab(); openNoteModal(null); }
+    else gotoTabThen('prep', () => openNoteModal(null));
+  }
+  function fabAddCandidate(){
+    closeFabMenu();
+    gotoTabThen('spots', () => openCandidateModal(null));
+  }
+  function fabAddMemory(){
+    closeFabMenu();
+    gotoTabThen('memories', () => openMemoryModal(null));
+  }
+
+  /* The three staples are always offered; the tab-specific one is added
+     on top so nothing becomes unreachable. */
+  function fabMenuItems(){
+    const list = [
+      { key:'addItem',      ic:'calendar',  fn:'fabAddItem' },
+      { key:'addChecklist', ic:'checklist', fn:'fabAddChecklist' },
+      { key:'addNote',      ic:'note',      fn:'fabAddNote' }
+    ];
+    if(currentTab === 'spots')    list.push({ key:'addCandidate', ic:'pin',   fn:'fabAddCandidate' });
+    if(currentTab === 'memories') list.push({ key:'addMemory',    ic:'photo', fn:'fabAddMemory' });
+    return list;
+  }
+  function openFabMenu(){
+    const menu = document.getElementById('fab-menu');
+    const scrim = document.getElementById('fab-scrim');
+    const fab = document.getElementById('fab');
+    if(!menu || !scrim || !fab) return;
+    menu.innerHTML = fabMenuItems().map(m =>
+      `<button type="button" onclick="${m.fn}()">${icon(m.ic, 19)}<span>${t(m.key)}</span></button>`
+    ).join('');
+    menu.classList.remove('hidden');
+    scrim.classList.remove('hidden');
+    void menu.offsetWidth;
+    menu.classList.add('show');
+    scrim.classList.add('show');
+    fab.classList.add('open');
+    fabMenuOpen = true;
+  }
+  function closeFabMenu(){
+    const menu = document.getElementById('fab-menu');
+    const scrim = document.getElementById('fab-scrim');
+    const fab = document.getElementById('fab');
+    if(!menu || !scrim || !fab) return;
+    menu.classList.remove('show');
+    scrim.classList.remove('show');
+    fab.classList.remove('open');
+    fabMenuOpen = false;
+    setTimeout(() => {
+      if(!fabMenuOpen){ menu.classList.add('hidden'); scrim.classList.add('hidden'); }
+    }, 220);
+  }
+  function onFabClick(){ fabMenuOpen ? closeFabMenu() : openFabMenu(); }
   function updateFab(){
     const fab = document.getElementById('fab');
     if(!fab) return;
-    const show = currentTab === 'items' || currentTab === 'spots'
-              || currentTab === 'memories'
-              || (currentTab === 'prep' && prepSubTab === 'notes');
-    fab.classList.toggle('hidden', !show);
-    fab.setAttribute('aria-label', t('addItem'));
+    fab.classList.remove('hidden');      // the menu works from every tab now
+    fab.setAttribute('aria-label', t('fabLabel'));
+    if(fabMenuOpen) closeFabMenu();
   }
 
   /* ---------- i18n ---------- */
@@ -1260,6 +1459,9 @@
       addItem:'予定を追加', itemEmptyDay:'この日の予定はまだありません。',
       editItem:'予定を編集', newItem:'予定を追加', itemTitlePlaceholder:'例：ディズニーランド',
       typeLabel:'タイプ', dateLabel:'日付', selectDate:'日付を選択',
+      addChecklist:'持ち物を追加', fabLabel:'追加',
+      itemDetailDuration:'所要時間',
+      durationNote:(d) => `実際の所要時間：${d}（時差を考慮）`,
       timeZoneLabel:'時刻の基準', tzJapan:'日本時間', tzLocal:'現地時間',
       tzShortJapan:'JST', tzShortLocal:'現地',
       tzNote:(z) => `入力した時刻を日本時間と現地時間（${z}）でワンタップ切り替えできます。並び順は時差を考慮して自動調整されます。`,
@@ -1328,6 +1530,9 @@
       addItem:'Add plan', itemEmptyDay:'Nothing planned for this day yet.',
       editItem:'Edit plan', newItem:'Add plan', itemTitlePlaceholder:'e.g. Disneyland',
       typeLabel:'Type', dateLabel:'Date', selectDate:'Select date',
+      addChecklist:'Add packing item', fabLabel:'Add',
+      itemDetailDuration:'Duration',
+      durationNote:(d) => `Actual duration: ${d} (time difference included)`,
       timeZoneLabel:'Times are in', tzJapan:'Japan time', tzLocal:'Local time',
       tzShortJapan:'JST', tzShortLocal:'Local',
       tzNote:(z) => `Switch the times you entered between Japan time and local time (${z}) with one tap. Ordering accounts for the time difference automatically.`,
@@ -1547,9 +1752,23 @@
     clearTimeout(window._toastTimer);
     window._toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
   }
-  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  let sheetScrollY = 0;
+  function openModal(id){
+    if(typeof closeFabMenu === 'function') closeFabMenu();
+    sheetScrollY = window.scrollY || 0;
+    document.body.style.top = (-sheetScrollY) + 'px';
+    document.body.classList.add('sheet-open');   // page can't drift behind the sheet
+    document.getElementById(id).classList.add('open');
+  }
+  function releaseSheetLock(){
+    if(document.querySelector('.modal-overlay.open')) return;  // another sheet is still up
+    document.body.classList.remove('sheet-open');
+    document.body.style.top = '';
+    window.scrollTo(0, sheetScrollY);
+  }
   function closeModal(id){
     document.getElementById(id).classList.remove('open');
+    releaseSheetLock();
     closeDatePicker();
     if(id === 'item-modal') promotingFromCandidateId = null;
   }
@@ -2047,14 +2266,14 @@
     const isMultiDay = it.endDate && it.endDate !== it.date;
     return `
       <div class="tl-row">
-        <div class="tl-time">${it.startTime || ''}${zoneShortLabel(it) ? `<span class="tz-badge">${zoneShortLabel(it)}</span>` : ''}</div>
+        <div class="tl-time">${it.startTime || ''}${zoneShortLabel(it,'start') ? `<span class="tz-badge">${zoneShortLabel(it,'start')}</span>` : ''}</div>
         <div class="tl-line-wrap"><div class="tl-dot" style="background:${info.color}"></div><div class="tl-line"></div></div>
         <div class="tl-card" onclick="openItemDetail('${it.id}')">
           <div class="tl-card-main">
             <div class="tl-card-head">
               <div class="tl-icon" style="background:${info.color}">${icon(info.icon, 17)}</div>
               <div class="tl-title">${escapeHtml(it.title)}</div>
-              ${it.endTime ? `<div class="tl-endtime">~${it.endTime}</div>` : ''}
+              ${it.endTime ? `<div class="tl-endtime">~${it.endTime}${zoneShortLabel(it,'end') ? `<span class="tz-badge">${zoneShortLabel(it,'end')}</span>` : ''}</div>` : ''}
             </div>
             ${isMultiDay ? `<div class="tl-place">${icon('calendar',14)}${formatDateJP(it.date)} 〜 ${formatDateJP(it.endDate)}</div>` : ''}
             ${it.place ? `<div class="tl-place">${icon('pin',14)}${escapeHtml(it.place)}</div>` : ''}
@@ -2097,8 +2316,14 @@
     const isMultiDay = it.endDate && it.endDate !== it.date;
     rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailDate')}</span><span class="detail-row-value">${isMultiDay ? (formatDateJP(it.date)+' 〜 '+formatDateJP(it.endDate)) : formatDateJP(it.date)}</span></div>`;
     if(it.startTime || it.endTime){
-      const zl = zoneShortLabel(it);
-      rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailTime')}</span><span class="detail-row-value">${it.startTime||''}${it.endTime?(' 〜 '+it.endTime):''}${zl?`<span class="tz-chip">${zl}</span>`:''}</span></div>`;
+      const zs = zoneShortLabel(it,'start'), ze = zoneShortLabel(it,'end');
+      const startPart = (it.startTime||'') + (zs && it.startTime ? `<span class="tz-chip">${zs}</span>` : '');
+      const endPart = it.endTime ? (' 〜 ' + it.endTime + (ze ? `<span class="tz-chip">${ze}</span>` : '')) : '';
+      rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailTime')}</span><span class="detail-row-value">${startPart}${endPart}</span></div>`;
+      const dur = itemDurationMinutes(it);
+      if(dur !== null){
+        rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailDuration')}</span><span class="detail-row-value">${formatDuration(dur)}</span></div>`;
+      }
     }
     if(it.place){
       rows += `<div class="detail-row"><span class="detail-row-label">${t('itemDetailAddress')}</span><span class="detail-row-value"><a class="map-link" href="${mapUrl}" target="_blank" rel="noopener">${icon('pin',15)}${escapeHtml(it.place)}</a></span></div>`;
@@ -2147,7 +2372,8 @@
     pendingItemCover = null;
     removeItemCoverFlag = false;
     existingItemCoverDataUrl = (item && item.id && item.hasCover) ? (itemCoverCache[item.id] || null) : null;
-    selectedItemTz = (item && item.tzMode) ? item.tzMode : 'local';
+    selectedStartTz = startZoneOf(item);
+    selectedEndTz = endZoneOf(item);
     document.getElementById('item-modal-title').textContent = editingItemId ? t('editItem') : t('newItem');
     document.getElementById('item-form-title').value = item ? (item.title || '') : '';
     const itemDateBtn = document.getElementById('item-form-date');
@@ -2169,6 +2395,7 @@
     renderTypeChips('item-type-picker', selectedItemType, ty => { selectedItemType = ty; });
     document.getElementById('item-delete-btn').style.display = editingItemId ? 'block' : 'none';
     renderItemTzToggle();
+    renderItemDuration();
     renderItemCoverPreview();
     renderAttachmentPreview();
     openModal('item-modal');
@@ -2224,10 +2451,11 @@
     if(editingItemId){
       item = data.items.find(i => i.id === editingItemId);
       itemId = editingItemId;
-      Object.assign(item, { title, type: selectedItemType, date, endDate, startTime, endTime, tzMode: selectedItemTz, place, contact, checkIn, checkOut, url, cost, paid, memo });
+      Object.assign(item, { title, type: selectedItemType, date, endDate, startTime, endTime, startTz: selectedStartTz, endTz: selectedEndTz, place, contact, checkIn, checkOut, url, cost, paid, memo });
+      delete item.tzMode;
     } else {
       itemId = uid();
-      item = { id: itemId, title, type: selectedItemType, date, endDate, startTime, endTime, tzMode: selectedItemTz, place, contact, checkIn, checkOut, url, cost, paid, memo, hasAttachment: false, hasCover: false };
+      item = { id: itemId, title, type: selectedItemType, date, endDate, startTime, endTime, startTz: selectedStartTz, endTz: selectedEndTz, place, contact, checkIn, checkOut, url, cost, paid, memo, hasAttachment: false, hasCover: false };
       data.items.push(item);
     }
     if(pendingAttachment){
@@ -2682,7 +2910,9 @@
     document.getElementById('memory-form-cancel').addEventListener('click', () => closeModal('memory-modal'));
     document.getElementById('memory-form-save').addEventListener('click', saveMemoryForm);
     document.getElementById('memory-delete-btn').addEventListener('click', deleteMemory);
-    document.querySelectorAll('.modal-overlay').forEach(ov => { ov.addEventListener('click', e => { if(e.target === ov) ov.classList.remove('open'); }); });
+    document.querySelectorAll('.modal-overlay').forEach(ov => {
+      ov.addEventListener('click', e => { if(e.target === ov){ ov.classList.remove('open'); releaseSheetLock(); } });
+    });
     document.addEventListener('click', (e) => {
       const popup = document.getElementById('date-picker-popup');
       if(!popup.classList.contains('open')) return;
